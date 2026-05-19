@@ -1,0 +1,1131 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predectiva — Health Data Collection</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1c1917 50%, #1e1b4b 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px 20px;
+            overflow-x: hidden;
+        }
+
+        /* Ambient Background Orbs */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.5;
+        }
+        .orb-1 { width: 500px; height: 500px; background: rgba(56, 189, 248, 0.15); top: -10%; left: -10%; }
+        .orb-2 { width: 400px; height: 400px; background: rgba(129, 140, 248, 0.15); bottom: -5%; right: -5%; }
+
+        .container {
+            width: 100%;
+            max-width: 800px;
+            position: relative;
+            z-index: 10;
+        }
+
+        .form-card {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            padding: 48px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: cardAppear 0.8s ease-out;
+        }
+
+        @keyframes cardAppear {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #38bdf8, #818cf8, #f472b6);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 12px;
+        }
+
+        .header p {
+            color: #94a3b8;
+            font-size: 1.1rem;
+            max-width: 500px;
+            margin: 0 auto;
+        }
+
+        /* Form Grid Layout */
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 24px;
+        }
+
+        .form-section-title {
+            grid-column: span 2;
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-top: 20px;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #cbd5e1;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        label i {
+            color: #38bdf8;
+            font-size: 0.9rem;
+        }
+
+        input, select {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 14px 16px;
+            color: #fff;
+            font-family: inherit;
+            font-size: 1rem;
+            transition: all 0.3s ease;
+        }
+
+        input:focus, select:focus {
+            outline: none;
+            border-color: #38bdf8;
+            background: rgba(15, 23, 42, 0.8);
+            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* Custom Range Slider */
+        .slider-container {
+            grid-column: span 2;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .slider-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 5px;
+            outline: none;
+            padding: 0;
+            border: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            background: #38bdf8;
+            cursor: pointer;
+            border-radius: 50%;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            transition: all 0.3s ease;
+        }
+
+        input[type="range"]::-webkit-slider-thumb:hover {
+            transform: scale(1.2);
+        }
+
+        .slider-value {
+            font-weight: 700;
+            color: #38bdf8;
+        }
+
+        /* Radio Group for Yes/No */
+        .radio-group {
+            display: flex;
+            gap: 12px;
+        }
+
+        .radio-option {
+            flex: 1;
+            position: relative;
+        }
+
+        .radio-option input {
+            position: absolute;
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .radio-label {
+            display: block;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            padding: 12px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            font-weight: 600;
+            color: #94a3b8;
+        }
+
+        .radio-option input:checked + .radio-label {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: #38bdf8;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+
+        /* Submit Button */
+        .submit-btn {
+            grid-column: span 2;
+            margin-top: 40px;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            color: #fff;
+            border: none;
+            border-radius: 16px;
+            padding: 18px;
+            font-size: 1.2rem;
+            font-weight: 700;
+            cursor: pointer;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            box-shadow: 0 10px 20px -5px rgba(56, 189, 248, 0.4);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-5px) scale(1.02);
+            box-shadow: 0 20px 30px -10px rgba(56, 189, 248, 0.6);
+            letter-spacing: 1px;
+        }
+
+        .submit-btn i {
+            transition: transform 0.4s ease;
+        }
+
+        .submit-btn:hover i {
+            transform: translateX(5px) rotate(10deg);
+        }
+
+        @media (max-width: 600px) {
+            .form-grid { grid-template-columns: 1fr; }
+            .form-section-title { grid-column: span 1; }
+            .slider-container { grid-column: span 1; }
+            .submit-btn { grid-column: span 1; }
+            .form-card { padding: 30px; }
+        }
+
+        /* AI Voice Assistant Panel Styles */
+        .voice-assistant-panel {
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 24px;
+            padding: 24px;
+            margin-bottom: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            box-shadow: inset 0 0 20px rgba(56, 189, 248, 0.05);
+        }
+
+        .voice-assistant-panel::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 2px;
+            background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+            animation: scanline 3s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
+        }
+
+        .voice-btn-container {
+            position: relative;
+            z-index: 10;
+        }
+
+        .voice-mic-btn {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            border: none;
+            color: #fff;
+            font-size: 2rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+        }
+
+        .voice-mic-btn.recording {
+            animation: pulse-glow 1.5s ease-in-out infinite;
+            background: linear-gradient(135deg, #ef4444, #f87171);
+            box-shadow: 0 0 30px rgba(239, 68, 68, 0.6);
+        }
+
+        @keyframes pulse-glow {
+            0% { transform: scale(1); box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+            50% { transform: scale(1.1); box-shadow: 0 0 40px rgba(239, 68, 68, 0.7); }
+            100% { transform: scale(1); box-shadow: 0 0 20px rgba(239, 68, 68, 0.4); }
+        }
+
+        .voice-status {
+            font-size: 0.9rem;
+            font-weight: 700;
+            color: #38bdf8;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            margin-top: 5px;
+        }
+
+        .transcription-display {
+            width: 100%;
+            min-height: 60px;
+            background: rgba(0, 0, 0, 0.2);
+            border-radius: 12px;
+            padding: 15px;
+            font-size: 0.95rem;
+            color: #cbd5e1;
+            font-style: italic;
+            border-left: 3px solid #38bdf8;
+            transition: all 0.3s ease;
+        }
+
+        .transcription-display:empty::before {
+            content: "Transcription will appear here...";
+            opacity: 0.4;
+        }
+
+        .ai-feedback-indicator {
+            display: flex;
+            gap: 4px;
+            margin-top: 5px;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .ai-feedback-indicator.active {
+            opacity: 1;
+        }
+
+        .dot {
+            width: 6px;
+            height: 6px;
+            background: #38bdf8;
+            border-radius: 50%;
+            animation: bounce 1.4s infinite ease-in-out both;
+        }
+
+        .dot:nth-child(1) { animation-delay: -0.32s; }
+        .dot:nth-child(2) { animation-delay: -0.16s; }
+
+        @keyframes bounce {
+            0%, 80%, 100% { transform: scale(0); }
+            40% { transform: scale(1); }
+        }
+
+        .voice-hint {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-top: 5px;
+        }
+
+        /* Multilingual Selector */
+        .lang-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 5px;
+        }
+
+        .lang-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #94a3b8;
+            padding: 5px 12px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .lang-btn.active {
+            background: rgba(56, 189, 248, 0.15);
+            border-color: #38bdf8;
+            color: #fff;
+            box-shadow: 0 0 10px rgba(56, 189, 248, 0.2);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                padding: 20px 15px;
+            }
+            .form-card {
+                padding: 35px 25px;
+                border-radius: 24px;
+            }
+            .header h1 {
+                font-size: 2.1rem;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+            .form-section-title, .slider-container, .submit-btn {
+                grid-column: span 1;
+            }
+        }
+
+        @media (max-width: 480px) {
+            body {
+                padding: 15px 10px;
+            }
+            .form-card {
+                padding: 25px 15px;
+                border-radius: 20px;
+            }
+            .header h1 {
+                font-size: 1.8rem;
+            }
+            .header p {
+                font-size: 0.95rem;
+            }
+            .voice-mic-btn {
+                width: 65px;
+                height: 65px;
+                font-size: 1.6rem;
+            }
+            .voice-status {
+                font-size: 0.8rem;
+            }
+            .transcription-display {
+                font-size: 0.85rem;
+                padding: 10px;
+            }
+            .radio-group {
+                flex-direction: column;
+                gap: 8px;
+            }
+            .radio-label {
+                padding: 10px;
+            }
+        }
+    </style>
+
+</head>
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+
+    <div class="container">
+        <div class="form-card">
+            <div class="header">
+                <!-- Added a back button row above the main title -->
+                <div style="display: flex; justify-content: flex-start; margin-bottom: 20px;">
+                    <a href="hero.html" onclick="stopAssistant()" style="color: #94a3b8; text-decoration: none; display: flex; align-items: center; gap: 8px; font-weight: 600; font-size: 0.9rem; transition: color 0.3s;">
+                        <i class="fa-solid fa-arrow-left"></i> Go Back
+                    </a>
+                </div>
+
+                <h1>Tell Us About Your Health</h1>
+                <p>Help Predectiva's AI analyze your risk profile by providing some basic health and lifestyle data.</p>
+            </div>
+
+            <!-- AI Voice Assistant Panel -->
+            <div class="voice-assistant-panel">
+                <!-- Language selection removed - defaulting to English -->
+                <div class="voice-btn-container">
+                    <button id="voice-mic-btn" class="voice-mic-btn" onclick="toggleVoiceInput()" title="Speak your health info">
+                        <i class="fa-solid fa-microphone"></i>
+                    </button>
+                    <div class="ai-feedback-indicator" id="ai-indicator">
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                        <div class="dot"></div>
+                    </div>
+                </div>
+                <div class="voice-status" id="voice-status">Speak Your Health Information</div>
+                <div class="transcription-display" id="transcription-text"></div>
+                <div class="voice-hint" id="voice-hint">"I am 22 years old, male, weight 70kg, height 170cm..."</div>
+            </div>
+
+            <form id="health-form" onsubmit="event.preventDefault(); analyzeHealth();">
+                <div class="form-grid">
+                    <!-- Personal Info -->
+                    <div class="form-section-title">
+                        <i class="fa-solid fa-user-doctor"></i> Personal Information
+                    </div>
+
+                    <div class="input-group">
+                        <label for="age"><i class="fa-solid fa-calendar-days"></i> Age</label>
+                        <input type="number" id="age" placeholder="e.g. 25" required min="1" max="100">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="gender"><i class="fa-solid fa-venus-mars"></i> Gender</label>
+                        <select id="gender" required>
+                            <option value="" disabled selected>Select Gender</option>
+                            <option value="male">Male</option>
+                            <option value="female">Female</option>
+                            <option value="other">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label for="height"><i class="fa-solid fa-ruler-vertical"></i> Height (cm)</label>
+                        <input type="number" id="height" placeholder="e.g. 175" required min="50" max="270">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="weight"><i class="fa-solid fa-weight-scale"></i> Weight (kg)</label>
+                        <input type="number" id="weight" placeholder="e.g. 70" required min="10" max="200">
+                    </div>
+
+                    <!-- Lifestyle -->
+                    <div class="form-section-title">
+                        <i class="fa-solid fa-person-running"></i> Lifestyle & Habits
+                    </div>
+
+                    <div class="slider-container">
+                        <div class="slider-header">
+                            <label><i class="fa-solid fa-bed"></i> Average Sleep Duration</label>
+                            <span class="slider-value" id="sleep-val">8 hours</span>
+                        </div>
+                        <input type="range" id="sleep" min="3" max="14" value="8" step="0.5" oninput="document.getElementById('sleep-val').innerText = this.value + ' hours'">
+                    </div>
+
+                    <div class="input-group">
+                        <label for="exercise"><i class="fa-solid fa-dumbbell"></i> Exercise Frequency</label>
+                        <select id="exercise" required>
+                            <option value="none">None</option>
+                            <option value="rarely">Rarely (1-2 times/month)</option>
+                            <option value="weekly">Weekly (1-3 times/week)</option>
+                            <option value="daily">Daily (4+ times/week)</option>
+                        </select>
+                    </div>
+
+                    <div class="input-group">
+                        <label><i class="fa-solid fa-droplet"></i> Daily Water Intake (Litres)</label>
+                        <input type="number" id="water" placeholder="e.g. 2.5" min="0" max="10" step="0.5">
+                    </div>
+
+                    <div class="input-group">
+                        <label><i class="fa-solid fa-smoking"></i> Smoking Habit</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" name="smoking" id="smoke-no" value="no" checked>
+                                <label for="smoke-no" class="radio-label">No</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="smoking" id="smoke-occ" value="occasionally">
+                                <label for="smoke-occ" class="radio-label">Maybe</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="smoking" id="smoke-yes" value="yes">
+                                <label for="smoke-yes" class="radio-label">Yes</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label><i class="fa-solid fa-glass-citrus"></i> Alcohol Consumption</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" name="alcohol" id="alc-no" value="no" checked>
+                                <label for="alc-no" class="radio-label">No</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="alcohol" id="alc-occ" value="occasionally">
+                                <label for="alc-occ" class="radio-label">Maybe</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="alcohol" id="alc-yes" value="yes">
+                                <label for="alc-yes" class="radio-label">Yes</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Family History -->
+                    <div class="form-section-title">
+                        <i class="fa-solid fa-dna"></i> Family Medical History
+                    </div>
+
+                    <div class="input-group">
+                        <label>Diabetes history in family?</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" name="family-diabetes" id="diab-no" value="no" checked>
+                                <label for="diab-no" class="radio-label">No</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="family-diabetes" id="diab-yes" value="yes">
+                                <label for="diab-yes" class="radio-label">Yes</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>Heart disease history?</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" name="family-heart" id="heart-no" value="no" checked>
+                                <label for="heart-no" class="radio-label">No</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="family-heart" id="heart-yes" value="yes">
+                                <label for="heart-yes" class="radio-label">Yes</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="input-group">
+                        <label>High blood pressure history?</label>
+                        <div class="radio-group">
+                            <div class="radio-option">
+                                <input type="radio" name="family-bp" id="bp-no" value="no" checked>
+                                <label for="bp-no" class="radio-label">No</label>
+                            </div>
+                            <div class="radio-option">
+                                <input type="radio" name="family-bp" id="bp-yes" value="yes">
+                                <label for="bp-yes" class="radio-label">Yes</label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="submit-btn" id="analyze-btn">
+                        <span>Analyze My Health</span>
+                        <i class="fa-solid fa-microchip"></i>
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        // AI Voice Assistant Logic
+        let recognition;
+        let isRecording = false;
+        const synth = window.speechSynthesis;
+        let currentLang = 'en-US';
+        let recentlyUpdated = [];
+        let lastAskedField = null;
+        let repromptTimer = null;
+        let isAssistantActive = false;
+
+        const i18n = {
+            'en-US': {
+                status: "Speak Your Health Information",
+                listening: "AI is Listening...",
+                welcome: "I'm listening. Please tell me your health details like age, weight, and habits.",
+                recorded: "Your $fields have been recorded successfully. ",
+                missing: "I noticed your $field is missing. Could you please provide that info?",
+                success: "All your health information has been captured. You're ready for the analysis!",
+                hint: '"I am 22 years old, weight 70kg, height 170cm..."',
+                fields: { age: 'age', gender: 'gender', height: 'height', weight: 'weight', sleep: 'sleep duration', exercise: 'exercise frequency' }
+            }
+        };
+
+        if ('webkitSpeechRecognition' in window) {
+            recognition = new webkitSpeechRecognition();
+            recognition.continuous = false; // Turn-based: stop after one sentence
+            recognition.interimResults = true;
+            recognition.lang = currentLang;
+
+            recognition.onstart = () => {
+                isRecording = true;
+                document.getElementById('voice-mic-btn').classList.add('recording');
+                document.getElementById('voice-status').innerText = i18n[currentLang].listening;
+            };
+
+            recognition.onend = () => {
+                isRecording = false;
+                document.getElementById('voice-mic-btn').classList.remove('recording');
+                document.getElementById('voice-status').innerText = i18n[currentLang].status;
+                
+                // No auto-restart here in turn-based mode
+            };
+
+            recognition.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; ++i) {
+                    if (event.results[i].isFinal) {
+                        finalTranscript += event.results[i][0].transcript;
+                        processVoiceInput(finalTranscript.toLowerCase());
+                    } else {
+                        interimTranscript += event.results[i][0].transcript;
+                    }
+                }
+                document.getElementById('transcription-text').innerText = finalTranscript || interimTranscript;
+            };
+        }
+
+        // setLanguage function removed as only English is supported.
+
+        function stopAssistant() {
+            isAssistantActive = false;
+            if (recognition) recognition.stop();
+            if (synth) synth.cancel();
+            clearTimeout(repromptTimer);
+        }
+
+        function toggleVoiceInput() {
+            if (!recognition) {
+                alert("Speech recognition is not supported in this browser. Please use Chrome or Edge.");
+                return;
+            }
+
+            if (isAssistantActive) {
+                isAssistantActive = false;
+                recognition.stop();
+                synth.cancel();
+                clearTimeout(repromptTimer);
+            } else {
+                isAssistantActive = true;
+                document.getElementById('transcription-text').innerText = '';
+                
+                // Speak first, mic will turn on automatically when speaking ends (due to autoResume)
+                speakAI(i18n[currentLang].welcome, true);
+            }
+        }
+
+        function processVoiceInput(text) {
+            let matched = [];
+            clearTimeout(repromptTimer); 
+            
+            // Age (Expanded Hinglish/Hindi/English)
+            const ageMatch = text.match(/(\d+)\s*(years|year|old|साल|वर्ष|ವಯಸ್ಸು|ವರ್ಷ|saal|umar|umur|baras|age|एज)/) || 
+                             text.match(/(age|उम्र|ವಯಸ್ಸು|umur|umar|baras|एज)\s*(is|am|of|है|ಆಗಿದೆ|ka|ki|ke|ए|है)?\s*(\d+)/) ||
+                             text.match(/(i am|i'm|मैं|ನಾನು|mujhe|meri|mera|humko|mujhko)\s*(age|एज|umar|उम्र)?\s*(\d+)/);
+            
+            if (ageMatch) {
+                const numericVal = text.match(/\d+/)?.[0];
+                if (numericVal) {
+                    document.getElementById('age').value = numericVal;
+                    highlightField('age');
+                    matched.push('age');
+                }
+            } else if (text.trim().match(/^\d+$/)) {
+                const val = text.trim();
+                // Context Awareness
+                if (lastAskedField && ['age', 'height', 'weight', 'sleep'].includes(lastAskedField)) {
+                    document.getElementById(lastAskedField).value = val;
+                    highlightField(lastAskedField);
+                    matched.push(lastAskedField);
+                } else if (val.length < 3) { // Likely age if short
+                    document.getElementById('age').value = val;
+                    highlightField('age');
+                    matched.push('age');
+                }
+            }
+
+            // Gender (Expanded Hinglish Support: adding phonetic मेल/फीमेल)
+            if (text.includes('male') || text.includes('man') || text.includes('पुरुष') || text.includes('ladka') || text.includes('boy') || text.includes('लड़का') || text.includes('ಪುರುಷ') || text.includes('mard') || text.includes('aadmi') || text.includes('मेल')) {
+                document.getElementById('gender').value = 'male';
+                highlightField('gender');
+                matched.push('gender');
+            } else if (text.includes('female') || text.includes('woman') || text.includes('महिला') || text.includes('ladki') || text.includes('girl') || text.includes('लड़की') || text.includes('ಮಹಿಳೆ') || text.includes('aurat') || text.includes('स्त्री') || text.includes('फीमेल') || text.includes('फ़िमेल')) {
+                document.getElementById('gender').value = 'female';
+                highlightField('gender');
+                matched.push('gender');
+            }
+
+            // Height (Phonetic Hinglish: हाइट, lambai)
+            const heightMatch = text.match(/(\d+)\s*(cm|centimeters|height|लंबाई|ಎತ್ತರ|ಸೆಂಟಿಮೀಟರ್|centimeter|lamba|tall|हाइट)/) || 
+                               text.match(/(height|लंबाई|ಎತ್ತರ|unche|lambai|हाइट)\s*(\d+)/);
+            if (heightMatch) {
+                const val = text.match(/\d+/)?.[0];
+                if (val) {
+                    document.getElementById('height').value = val;
+                    highlightField('height');
+                    matched.push('height');
+                }
+            }
+
+            // Weight (Phonetic Hinglish: वेट, वजन)
+            const weightMatch = text.match(/(\d+)\s*(kg|kilos|kilograms|weight|वजन|ತೂಕ|ಕಿಲೋ|kilo|vajan|bhaari|वेट)/) || 
+                               text.match(/(weight|वजन|ತೂಕ|vajan|weight|वेट)\s*(\d+)/);
+            if (weightMatch) {
+                const val = text.match(/\d+/)?.[0];
+                if (val) {
+                    document.getElementById('weight').value = val;
+                    highlightField('weight');
+                    matched.push('weight');
+                }
+            }
+
+            // Water
+            const waterMatch = text.match(/(\d+\.?\d*)\s*(litres|liters|water|लीटर|ಲೀಟರ್|ನೀರು|pani|litre)/);
+            if (waterMatch) {
+                const val = text.match(/\d+\.?\d*/)?.[0];
+                if (val) {
+                    document.getElementById('water').value = val;
+                    highlightField('water');
+                    matched.push('water');
+                }
+            }
+
+            // Sleep
+            const sleepMatch = text.match(/(\d+\.?\d*)\s*(hours|hour|sleep|घंटे|ತಾಸು|ಗಂಟೆ|ನಿದ್ರೆ|ghante|soya|neend)/);
+            if (sleepMatch) {
+                const val = text.match(/\d+\.?\d*/)?.[0];
+                if (val) {
+                    document.getElementById('sleep').value = val;
+                    document.getElementById('sleep-val').innerText = val + (currentLang === 'en-US' ? ' hours' : (currentLang === 'hi-IN' || currentLang === 'hinglish' ? ' घंटे' : ' ಗಂಟೆಗಳು'));
+                    highlightField('sleep');
+                    matched.push('sleep');
+                }
+            }
+
+            // Exercise
+            if (text.includes('exercise daily') || text.includes('every day') || text.includes('रोजाना') || text.includes('ಪ್ರತಿದಿನ') || text.includes('daily') || text.includes('roj') || text.includes('kasrat') || text.includes('vyayam')) {
+                document.getElementById('exercise').value = 'daily';
+                highlightField('exercise');
+                matched.push('exercise');
+            } else if (text.includes('weekly') || text.includes('twice a week') || text.includes('हफ्ते में') || text.includes('ವಾರದಲ್ಲಿ') || text.includes('week') || text.includes('hafte')) {
+                document.getElementById('exercise').value = 'weekly';
+                highlightField('exercise');
+                matched.push('exercise');
+            }
+
+            // Habits
+            if (text.includes('smoke') || text.includes('smoking') || text.includes('धूम्रपान') || text.includes('ಧೂಮಪಾನ') || text.includes('sutta') || text.includes('bidi') || text.includes('cigaratte')) {
+                if (text.includes('no') || text.includes('dont') || text.includes('never') || text.includes('नहीं') || text.includes('ಇಲ್ಲ') || text.includes('nhi') || text.includes('mana')) {
+                    document.getElementById('smoke-no').checked = true;
+                    matched.push('smoking habit');
+                } else if (text.includes('yes') || text.includes('regularly') || text.includes('हाँ') || text.includes('ಹೌದು') || text.includes('ha') || text.includes('karte')) {
+                    document.getElementById('smoke-yes').checked = true;
+                    matched.push('smoking habit');
+                }
+            }
+
+            if (text.includes('alcohol') || text.includes('drink') || text.includes('शराब') || text.includes('ಮದ್ಯ') || text.includes('daru') || text.includes('wine') || text.includes('beer')) {
+                if (text.includes('no') || text.includes('dont') || text.includes('never') || text.includes('नहीं') || text.includes('ಇಲ್ಲ') || text.includes('nhi') || text.includes('chhod')) {
+                    document.getElementById('alc-no').checked = true;
+                    matched.push('alcohol habit');
+                } else if (text.includes('yes') || text.includes('regularly') || text.includes('हाँ') || text.includes('ಹೌದು') || text.includes('ha') || text.includes('pite')) {
+                    document.getElementById('alc-yes').checked = true;
+                    matched.push('alcohol habit');
+                }
+            }
+
+            // Update global recently updated list, filtering duplicates
+            matched.forEach(m => {
+                if (!recentlyUpdated.includes(m)) recentlyUpdated.push(m);
+            });
+
+            // Logic to check completeness after a short delay to allow more input
+            if (matched.length > 0) {
+                setTimeout(checkMissingFields, 1200);
+            } else {
+                startRepromptTimer();
+            }
+        }
+
+        function startRepromptTimer() {
+            clearTimeout(repromptTimer);
+            if (isAssistantActive) {
+                repromptTimer = setTimeout(() => {
+                    if (isAssistantActive) checkMissingFields();
+                }, 8000); 
+            }
+        }
+
+        function checkMissingFields() {
+            const fields = [
+                { id: 'age', key: 'age' },
+                { id: 'gender', key: 'gender' },
+                { id: 'height', key: 'height' },
+                { id: 'weight', key: 'weight' },
+                { id: 'sleep', key: 'sleep' },
+                { id: 'exercise', key: 'exercise' }
+            ];
+
+            let missingField = null;
+            for (let f of fields) {
+                const el = document.getElementById(f.id);
+                if (!el.value || el.value === "") {
+                    missingField = f;
+                    break;
+                }
+            }
+
+            if (missingField) {
+                recognition.stop();
+                lastAskedField = missingField.id;
+                
+                let response = "";
+                const langData = i18n[currentLang];
+                
+                // 1. Acknowledge what was just recorded
+                if (recentlyUpdated.length > 0) {
+                    const localizedFields = recentlyUpdated.map(m => langData.fields[m] || m);
+                    const conjunction = currentLang === 'en-US' ? ' and ' : ' aur ';
+                    const listStr = localizedFields.join(conjunction);
+                    response += langData.recorded.replace('$fields', listStr);
+                    recentlyUpdated = []; 
+                }
+                
+                // 2. Ask for the missing field
+                const fieldLabel = langData.fields[missingField.key];
+                response += langData.missing.replace('$field', fieldLabel);
+                
+                speakAI(response, true);
+                return;
+            }
+
+            // If all done
+            isAssistantActive = false;
+            recognition.stop();
+            speakAI(i18n[currentLang].success);
+            recentlyUpdated = [];
+            lastAskedField = null;
+        }
+
+        function speakAI(text, autoResume = false) {
+            if (synth.speaking) synth.cancel();
+            clearTimeout(repromptTimer);
+            
+            const utter = new SpeechSynthesisUtterance(text);
+            // Hinglish uses Hindi voice
+            utter.lang = (currentLang === 'hinglish' ? 'hi-IN' : currentLang);
+            utter.pitch = 1.0;
+            utter.rate = 0.95;
+
+            const voices = synth.getVoices();
+            const targetLang = (currentLang === 'hinglish' ? 'hi-IN' : currentLang);
+            let selectedVoice = voices.find(v => v.lang === targetLang && (v.name.includes('Google') || v.name.includes('Microsoft')));
+            if (!selectedVoice) selectedVoice = voices.find(v => v.lang.startsWith(targetLang.split('-')[0]));
+            
+            if (selectedVoice) utter.voice = selectedVoice;
+            
+            utter.onstart = () => {
+                document.getElementById('ai-indicator').classList.add('active');
+            };
+            utter.onend = () => {
+                document.getElementById('ai-indicator').classList.remove('active');
+                if (autoResume) {
+                    recognition.start();
+                    startRepromptTimer();
+                }
+            };
+
+            synth.speak(utter);
+        }
+
+
+        // Pre-load voices for better reliability
+        window.speechSynthesis.onvoiceschanged = () => {
+            console.log("Voices loaded:", window.speechSynthesis.getVoices().length);
+        };
+
+        function highlightField(id) {
+            const el = document.getElementById(id);
+            el.style.borderColor = "#38bdf8";
+            el.style.boxShadow = "0 0 20px rgba(56, 189, 248, 0.4)";
+            setTimeout(() => {
+                el.style.borderColor = "";
+                el.style.boxShadow = "";
+            }, 2000);
+        }
+
+
+        function showValidationError(message, fieldId) {
+            // Re-enable submit button
+            const btn = document.getElementById('analyze-btn');
+            btn.innerHTML = '<span>Analyze Health</span> <i class="fa-solid fa-arrow-right"></i>';
+            btn.disabled = false;
+
+            // Highlight the field with red danger glow
+            const el = document.getElementById(fieldId);
+            if (el) {
+                el.style.borderColor = "#ef4444";
+                el.style.boxShadow = "0 0 20px rgba(239, 68, 68, 0.4)";
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                setTimeout(() => {
+                    el.style.borderColor = "";
+                    el.style.boxShadow = "";
+                }, 4000);
+            }
+
+            // Create validation toast notification
+            let toast = document.getElementById('validation-toast');
+            if (!toast) {
+                toast = document.createElement('div');
+                toast.id = 'validation-toast';
+                toast.style.position = 'fixed';
+                toast.style.bottom = '30px';
+                toast.style.right = '30px';
+                toast.style.background = 'rgba(15, 23, 42, 0.95)';
+                toast.style.border = '1px solid #ef4444';
+                toast.style.boxShadow = '0 0 25px rgba(239, 68, 68, 0.25), inset 0 0 15px rgba(239, 68, 68, 0.1)';
+                toast.style.color = '#fecaca';
+                toast.style.padding = '16px 24px';
+                toast.style.borderRadius = '12px';
+                toast.style.fontFamily = 'system-ui, -apple-system, sans-serif';
+                toast.style.fontSize = '0.95rem';
+                toast.style.fontWeight = '600';
+                toast.style.zIndex = '99999';
+                toast.style.display = 'flex';
+                toast.style.alignItems = 'center';
+                toast.style.gap = '12px';
+                toast.style.transition = 'all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275)';
+                toast.style.transform = 'translateY(100px)';
+                toast.style.opacity = '0';
+                document.body.appendChild(toast);
+            }
+
+            toast.innerHTML = `<i class="fa-solid fa-triangle-exclamation" style="color: #ef4444; font-size: 1.2rem;"></i> <span>${message}</span>`;
+            
+            // Show toast
+            setTimeout(() => {
+                toast.style.transform = 'translateY(0)';
+                toast.style.opacity = '1';
+            }, 100);
+
+            // Hide toast after 4s
+            setTimeout(() => {
+                toast.style.transform = 'translateY(100px)';
+                toast.style.opacity = '0';
+            }, 4000);
+        }
+
+        function analyzeHealth() {
+            // Collect data
+            const formData = {
+                age: document.getElementById('age').value,
+                gender: document.getElementById('gender').value,
+                height: document.getElementById('height').value,
+                weight: document.getElementById('weight').value,
+                sleep: document.getElementById('sleep').value,
+                exercise: document.getElementById('exercise').value,
+                water: document.getElementById('water').value,
+                smoking: document.querySelector('input[name="smoking"]:checked').value,
+                alcohol: document.querySelector('input[name="alcohol"]:checked').value,
+                diabetes: document.querySelector('input[name="family-diabetes"]:checked').value,
+                heart: document.querySelector('input[name="family-heart"]:checked').value,
+                bp: document.querySelector('input[name="family-bp"]:checked').value
+            };
+
+            // Human-like validations
+            const ageVal = parseInt(formData.age);
+            const heightVal = parseFloat(formData.height);
+            const weightVal = parseFloat(formData.weight);
+            const waterVal = parseFloat(formData.water);
+
+            if (isNaN(ageVal) || ageVal < 1 || ageVal > 115) {
+                showValidationError("Please enter a realistic human age (1 to 115 years).", "age");
+                return;
+            }
+            if (formData.gender === "") {
+                showValidationError("Please select your gender.", "gender");
+                return;
+            }
+            if (isNaN(heightVal) || heightVal < 50 || heightVal > 250) {
+                showValidationError("Please enter a realistic human height (50 to 250 cm).", "height");
+                return;
+            }
+            if (isNaN(weightVal) || weightVal < 10 || weightVal > 250) {
+                showValidationError("Please enter a realistic human weight (10 to 250 kg).", "weight");
+                return;
+            }
+            if (formData.water !== "" && (isNaN(waterVal) || waterVal < 0 || waterVal > 10)) {
+                showValidationError("Please enter a realistic daily water intake (0 to 10 Litres).", "water");
+                return;
+            }
+
+            const btn = document.getElementById('analyze-btn');
+            btn.innerHTML = '<span>Processing...</span> <i class="fa-solid fa-spinner fa-spin"></i>';
+            btn.disabled = true;
+
+            // Save to localStorage as a fast client-side cache
+            localStorage.setItem('healthData', JSON.stringify(formData));
+
+            // Send to secure backend API
+            const API_BASE = window.location.port === '5000' ? '' : 'http://localhost:5000';
+            fetch(`${API_BASE}/api/health`, {
+                method: 'POST',
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + sessionStorage.getItem('token')
+                },
+                credentials: 'include',
+                body: JSON.stringify(formData)
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) {
+                    console.error("Backend save failed:", data.message);
+                }
+            })
+            .catch(err => {
+                console.error("Error connecting to backend database:", err);
+            });
+
+            // Small delay for "AI loading" effect
+            setTimeout(() => {
+                window.location.href = 'analysis.html';
+            }, 2000);
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,1938 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predectiva — AI Health Analysis</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --accent: #00e5ff;
+            --secondary: #9047ff;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass-bg: rgba(15, 20, 35, 0.85);
+            /* Increased opacity for better readability */
+            --border-glow: rgba(0, 229, 255, 0.3);
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: radial-gradient(circle at center, #1a1b41 0%, var(--bg-color) 100%);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Small Health Graph Panel (right side, middle height) */
+        #health-graph-panel {
+            position: fixed;
+            right: 40px;
+            /* Positioned at the right edge, same as insight card */
+            top: 50%;
+            transform: translateY(-50%) translateX(20px);
+            width: 340px;
+            background: linear-gradient(135deg, rgba(11, 15, 25, 0.95), rgba(30, 20, 70, 0.8));
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            border-radius: 20px;
+            padding: 20px;
+            z-index: 150;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.6), inset 0 0 20px rgba(144, 71, 255, 0.1);
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.8s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        #health-graph-panel.visible {
+            opacity: 1;
+            transform: translateY(-50%) translateX(0);
+            pointer-events: auto;
+        }
+
+        .graph-panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .graph-panel-title {
+            font-size: 0.65rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .graph-legend {
+            display: flex;
+            gap: 12px;
+            font-size: 0.6rem;
+            font-weight: 600;
+        }
+
+        .legend-you {
+            color: #00e5ff;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-who {
+            color: #9047ff;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .legend-dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+        }
+
+        #health-graph-canvas {
+            width: 100%;
+            height: 120px;
+            display: block;
+            border-radius: 10px;
+        }
+
+        /* ═══ AMBIENT BACKGROUND ANIMATIONS ═══ */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            pointer-events: none;
+            animation: orbFloat 12s ease-in-out infinite alternate;
+        }
+
+        .orb-1 {
+            width: 600px;
+            height: 600px;
+            background: rgba(0, 229, 255, 0.08);
+            top: -15%;
+            left: -10%;
+            animation-delay: 0s;
+        }
+
+        .orb-2 {
+            width: 500px;
+            height: 500px;
+            background: rgba(144, 71, 255, 0.1);
+            bottom: -10%;
+            right: -8%;
+            animation-delay: -4s;
+        }
+
+        .orb-3 {
+            width: 350px;
+            height: 350px;
+            background: rgba(56, 189, 248, 0.07);
+            top: 40%;
+            left: 40%;
+            animation-delay: -8s;
+            animation-duration: 16s;
+        }
+
+        @keyframes orbFloat {
+            0% {
+                transform: translate(0, 0) scale(1);
+            }
+
+            33% {
+                transform: translate(40px, -30px) scale(1.05);
+            }
+
+            66% {
+                transform: translate(-30px, 20px) scale(0.97);
+            }
+
+            100% {
+                transform: translate(20px, 40px) scale(1.03);
+            }
+        }
+
+        /* Floating grid lines */
+        .bg-grid {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            background-image:
+                linear-gradient(rgba(0, 229, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 229, 255, 0.03) 1px, transparent 1px);
+            background-size: 60px 60px;
+            animation: gridShift 30s linear infinite;
+        }
+
+        @keyframes gridShift {
+            0% {
+                background-position: 0 0;
+            }
+
+            100% {
+                background-position: 60px 60px;
+            }
+        }
+
+        /* Floating Medical Particles */
+        .particles-container {
+            position: fixed;
+            inset: 0;
+            z-index: 1;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            bottom: -60px;
+            font-size: 1.2rem;
+            color: rgba(0, 229, 255, 0.25);
+            animation: riseUp linear infinite;
+            text-shadow: 0 0 10px rgba(0, 229, 255, 0.5);
+        }
+
+        @keyframes riseUp {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 0;
+            }
+
+            10% {
+                opacity: 1;
+            }
+
+            90% {
+                opacity: 0.6;
+            }
+
+            100% {
+                transform: translateY(-110vh) rotate(30deg);
+                opacity: 0;
+            }
+        }
+
+        /* Individual particle placements, sizes & timings */
+        .p1 {
+            left: 5%;
+            font-size: 1.0rem;
+            animation-duration: 14s;
+            animation-delay: 0s;
+        }
+
+        .p2 {
+            left: 12%;
+            font-size: 0.85rem;
+            animation-duration: 18s;
+            animation-delay: 2s;
+            color: rgba(144, 71, 255, 0.3);
+        }
+
+        .p3 {
+            left: 20%;
+            font-size: 1.3rem;
+            animation-duration: 12s;
+            animation-delay: 5s;
+        }
+
+        .p4 {
+            left: 28%;
+            font-size: 0.9rem;
+            animation-duration: 20s;
+            animation-delay: 1s;
+            color: rgba(56, 189, 248, 0.25);
+        }
+
+        .p5 {
+            left: 38%;
+            font-size: 1.1rem;
+            animation-duration: 16s;
+            animation-delay: 8s;
+        }
+
+        .p6 {
+            left: 48%;
+            font-size: 0.8rem;
+            animation-duration: 22s;
+            animation-delay: 3s;
+            color: rgba(144, 71, 255, 0.25);
+        }
+
+        .p7 {
+            left: 58%;
+            font-size: 1.2rem;
+            animation-duration: 15s;
+            animation-delay: 6s;
+        }
+
+        .p8 {
+            left: 68%;
+            font-size: 0.95rem;
+            animation-duration: 19s;
+            animation-delay: 11s;
+            color: rgba(56, 189, 248, 0.3);
+        }
+
+        .p9 {
+            left: 78%;
+            font-size: 1.05rem;
+            animation-duration: 13s;
+            animation-delay: 4s;
+        }
+
+        .p10 {
+            left: 87%;
+            font-size: 0.85rem;
+            animation-duration: 21s;
+            animation-delay: 9s;
+            color: rgba(144, 71, 255, 0.3);
+        }
+
+        .p11 {
+            left: 93%;
+            font-size: 1.3rem;
+            animation-duration: 17s;
+            animation-delay: 7s;
+        }
+
+        .p12 {
+            left: 33%;
+            font-size: 0.8rem;
+            animation-duration: 24s;
+            animation-delay: 13s;
+            color: rgba(0, 229, 255, 0.2);
+        }
+
+        /* Header area */
+        header {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            padding: 30px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 2rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        /* The Main Viewport for the Body */
+        #viewport {
+            width: 100vw;
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: absolute;
+            top: 0;
+            left: 0;
+            transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: center;
+        }
+
+        /* Main Body Illustration Container */
+        .body-container {
+            height: 85vh;
+            max-width: 100vw;
+            position: relative;
+            filter: drop-shadow(0 0 40px rgba(0, 229, 255, 0.15));
+            transition: filter 0.8s ease, opacity 0.8s ease;
+            display: flex;
+            justify-content: center;
+        }
+
+        /* The Realistic Image */
+        .body-image {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+            border-radius: 20px;
+            /* To remove a white background on a dark theme, we invert the image and use screen */
+            filter: invert(1) hue-rotate(180deg) drop-shadow(0 0 20px rgba(0, 229, 255, 0.4));
+            mix-blend-mode: screen;
+            opacity: 0.9;
+        }
+
+        /* SVG Overlay for Interactive Hotspots */
+        .body-illustration {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 10;
+        }
+
+        /* Hide the old SVG outline since we have an image now */
+        .body-outline {
+            display: none;
+        }
+
+        /* Interactive Organs */
+        .organ-hotspot {
+            fill: rgba(0, 229, 255, 0.05);
+            stroke: rgba(0, 229, 255, 0.4);
+            stroke-width: 1.5;
+            cursor: pointer;
+            transition: all 0.4s ease;
+        }
+
+        .organ-hotspot:hover,
+        .organ-hotspot.active {
+            fill: rgba(0, 229, 255, 0.25);
+            stroke: var(--accent);
+            stroke-width: 2.5;
+            filter: drop-shadow(0 0 20px var(--accent));
+        }
+
+        /* Risk-based organ colors */
+        .organ-hotspot.risk-medium {
+            stroke: #facc15;
+            fill: rgba(250, 204, 21, 0.15);
+        }
+
+        .organ-hotspot.risk-medium:hover,
+        .organ-hotspot.active.risk-medium {
+            fill: rgba(250, 204, 21, 0.3);
+            filter: drop-shadow(0 0 20px #facc15);
+        }
+
+        .organ-hotspot.risk-high {
+            stroke: #f87171;
+            fill: rgba(248, 113, 113, 0.15);
+        }
+
+        .organ-hotspot.risk-high:hover,
+        .organ-hotspot.active.risk-high {
+            fill: rgba(248, 113, 113, 0.3);
+            filter: drop-shadow(0 0 20px #f87171);
+        }
+
+
+
+        /* But keep the active hotspot sharp and glowing */
+        body.zoomed .organ-hotspot.active {
+            filter: drop-shadow(0 0 25px var(--accent)) blur(0px) !important;
+            opacity: 1 !important;
+        }
+
+        /* Floating Disease Prediction Panel (Right Panel) */
+        #insight-card {
+            position: fixed;
+            right: 40px;
+            top: 50%;
+            transform: translateY(-50%) translateX(50px);
+            width: 440px;
+            max-height: 85vh;
+            overflow-y: auto;
+            background: linear-gradient(135deg, rgba(11, 15, 25, 0.85), rgba(30, 20, 70, 0.6));
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(0, 229, 255, 0.2);
+            border-top: 1px solid var(--border-glow);
+            border-radius: 24px;
+            padding: 35px 30px;
+            opacity: 0;
+            pointer-events: none;
+            transition: all 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+            z-index: 200;
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.8), inset 0 0 30px rgba(144, 71, 255, 0.15);
+        }
+
+        /* Custom Scrollbar for Insight Card */
+        #insight-card::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #insight-card::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 10px;
+        }
+
+        #insight-card::-webkit-scrollbar-thumb {
+            background: rgba(0, 229, 255, 0.3);
+            border-radius: 10px;
+        }
+
+        #insight-card::-webkit-scrollbar-thumb:hover {
+            background: rgba(0, 229, 255, 0.6);
+        }
+
+        #insight-card.visible {
+            transform: translateY(-50%) translateX(0);
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .panel-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 25px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 20px;
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .organ-icon-container {
+            width: 45px;
+            height: 45px;
+            border-radius: 12px;
+            background: rgba(0, 229, 255, 0.1);
+            border: 1px solid rgba(0, 229, 255, 0.3);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            color: var(--accent);
+            box-shadow: 0 0 15px rgba(0, 229, 255, 0.2);
+        }
+
+        .panel-header h2 {
+            font-size: 1.6rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 2px;
+        }
+
+        .risk-badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 0.75rem;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .badge-low {
+            background: rgba(74, 222, 128, 0.15);
+            color: #4ade80;
+            border: 1px solid rgba(74, 222, 128, 0.3);
+        }
+
+        .badge-medium {
+            background: rgba(250, 204, 21, 0.15);
+            color: #facc15;
+            border: 1px solid rgba(250, 204, 21, 0.3);
+        }
+
+        .badge-high {
+            background: rgba(248, 113, 113, 0.15);
+            color: #f87171;
+            border: 1px solid rgba(248, 113, 113, 0.3);
+        }
+
+        .section-title {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .section-title::before {
+            content: '';
+            display: inline-block;
+            width: 4px;
+            height: 14px;
+            background: var(--accent);
+            border-radius: 4px;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .reasons-list {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .reasons-list li {
+            font-size: 0.95rem;
+            color: #ffffff;
+            font-weight: 500;
+            line-height: 1.5;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .reasons-list li i {
+            color: #facc15;
+            margin-top: 4px;
+            font-size: 0.9rem;
+        }
+
+        .disease-list {
+            list-style: none;
+            margin-bottom: 25px;
+        }
+
+        .disease-list li {
+            font-size: 0.95rem;
+            color: #ffffff;
+            font-weight: 500;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .disease-list li::before {
+            content: '';
+            display: inline-block;
+            width: 6px;
+            height: 6px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .preventive-list {
+            list-style: none;
+        }
+
+        .preventive-list li {
+            font-size: 0.9rem;
+            color: #ffffff;
+            /* Improved Contrast */
+            font-weight: 500;
+            margin-bottom: 10px;
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .preventive-list li i {
+            color: #4ade80;
+            margin-top: 3px;
+            font-size: 0.9rem;
+        }
+
+        /* Specific styles for new AI sections */
+        .score-display-box {
+            background: rgba(0, 0, 0, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 16px;
+            padding: 15px 20px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 25px;
+        }
+
+        .score-value {
+            font-size: 2rem;
+            font-weight: 800;
+            color: #fff;
+            text-shadow: 0 0 15px rgba(255, 255, 255, 0.3);
+        }
+
+        .prob-bar-container {
+            margin-bottom: 12px;
+        }
+
+        .prob-bar-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.85rem;
+            color: #e2e8f0;
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+
+        .prob-bar-bg {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+        }
+
+        .prob-bar-fill {
+            height: 100%;
+            border-radius: 10px;
+            background: linear-gradient(90deg, var(--accent), var(--secondary));
+            box-shadow: 0 0 10px var(--accent);
+            transition: width 1s ease-out;
+        }
+
+        .timeline-box {
+            border-left: 2px solid rgba(0, 229, 255, 0.3);
+            padding-left: 20px;
+            margin-left: 10px;
+            margin-bottom: 25px;
+            position: relative;
+        }
+
+        .timeline-item {
+            position: relative;
+            margin-bottom: 15px;
+        }
+
+        .timeline-item:last-child {
+            margin-bottom: 0;
+        }
+
+        .timeline-item::before {
+            content: '';
+            position: absolute;
+            left: -26px;
+            top: 5px;
+            width: 10px;
+            height: 10px;
+            background: var(--accent);
+            border-radius: 50%;
+            box-shadow: 0 0 10px var(--accent);
+        }
+
+        .timeline-year {
+            font-size: 0.8rem;
+            font-weight: 700;
+            color: var(--secondary);
+            margin-bottom: 2px;
+        }
+
+        .timeline-desc {
+            font-size: 0.9rem;
+            color: #fff;
+            line-height: 1.4;
+        }
+
+        .disclaimer {
+            font-size: 0.7rem;
+            color: rgba(255, 255, 255, 0.4);
+            text-align: center;
+            margin-top: 30px;
+            border-top: 1px dotted rgba(255, 255, 255, 0.1);
+            padding-top: 15px;
+            font-style: italic;
+        }
+
+        /* Health Summary Section (Left Side) */
+        .summary-card {
+            position: fixed;
+            top: 50%;
+            left: 60px;
+            transform: translateY(-50%);
+            width: 320px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            border-radius: 20px;
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 25px;
+            z-index: 100;
+            transition: opacity 0.5s ease;
+            box-shadow: 0 30px 60px rgba(0, 0, 0, 0.6);
+        }
+
+
+
+        .score-section {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            width: 100%;
+        }
+
+        .score-circle {
+            width: 70px;
+            height: 70px;
+            border-radius: 50%;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-top-color: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #fff;
+            position: relative;
+        }
+
+        .score-circle::after {
+            content: '';
+            position: absolute;
+            inset: -4px;
+            border-radius: 50%;
+            border: 4px solid transparent;
+            border-right-color: var(--secondary);
+            animation: spin 3s linear infinite;
+        }
+
+        @keyframes spin {
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+
+        .top-risks-section {
+            width: 100%;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 25px;
+        }
+
+        .risk-item {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.9rem;
+            margin-bottom: 8px;
+        }
+
+        .risk-item .name {
+            color: #ffffff;
+            font-weight: 600;
+            font-size: 0.95rem;
+        }
+
+        .risk-item .level {
+            color: var(--accent);
+            font-weight: 700;
+            font-size: 0.95rem;
+        }
+
+        .advice-section {
+            width: 100%;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 25px;
+        }
+
+        .advice-section p {
+            font-size: 0.95rem;
+            color: #ffffff;
+            line-height: 1.6;
+            font-weight: 500;
+        }
+
+        /* Video Generation CTA Section */
+        .video-cta-section {
+            width: 100%;
+            margin-top: 25px;
+            padding-top: 25px;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .video-btn {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            color: #000;
+            padding: 15px;
+            border-radius: 16px;
+            text-align: center;
+            font-weight: 700;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            font-size: 1rem;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 20px rgba(0, 229, 255, 0.3);
+            border: none;
+            cursor: pointer;
+        }
+
+        .video-btn:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 15px 30px rgba(0, 229, 255, 0.5);
+        }
+
+        .video-btn i {
+            font-size: 1.2rem;
+        }
+
+        /* Buttons & Navigation */
+        .controls {
+            position: fixed;
+            top: 30px;
+            right: 50px;
+            z-index: 200;
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 10px 20px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            border: none;
+            color: #000;
+        }
+
+        .btn-primary:hover {
+            opacity: 0.9;
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.4);
+        }
+
+        #reset-zoom-btn {
+            display: none;
+        }
+
+        /* Responsive adjustments */
+        @media (max-width: 1200px) {
+            .summary-card {
+                left: 20px;
+                width: 280px;
+                padding: 20px;
+            }
+
+            #insight-card {
+                right: 20px;
+                width: 350px;
+            }
+        }
+
+        /* ── Neural Bio-Connectivity Innovation ── */
+        #neural-canvas {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            pointer-events: none;
+            opacity: 0.6;
+        }
+
+        /* ── AI Emergency Risk Alert Panel ── */
+        #emergency-alert-panel {
+            position: fixed;
+            top: 100px;
+            right: 520px;
+            width: 320px;
+            z-index: 250;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .alert-notification {
+            background: rgba(15, 20, 35, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: 16px;
+            padding: 20px;
+            border-left: 5px solid var(--danger);
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(248, 113, 113, 0.2);
+            pointer-events: auto;
+            animation: alertSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            opacity: 0;
+            transform: translateX(40px);
+        }
+
+        @keyframes alertSlideIn {
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .alert-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 8px;
+            color: #f87171;
+            font-weight: 800;
+            text-transform: uppercase;
+            font-size: 0.75rem;
+            letter-spacing: 1px;
+        }
+
+        .alert-message {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: #e2e8f0;
+            margin-bottom: 12px;
+        }
+
+        .alert-actions {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .alert-tag {
+            background: rgba(248, 113, 113, 0.1);
+            color: #f87171;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            border: 1px solid rgba(248, 113, 113, 0.2);
+        }
+
+        .alert-tag.warning {
+            color: #facc15;
+            background: rgba(250, 204, 21, 0.1);
+            border-color: rgba(250, 204, 21, 0.2);
+        }
+
+        .alert-notification.yellow {
+            border-left-color: #facc15;
+            box-shadow: 0 15px 40px rgba(0, 0, 0, 0.6), 0 0 20px rgba(250, 204, 21, 0.15);
+        }
+
+        .alert-notification.yellow .alert-header {
+            color: #facc15;
+        }
+    </style>
+
+</head>
+
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-satellite-dish"></i> MEDAI
+        </div>
+        <div class="controls">
+            <button id="reset-zoom-btn" class="btn" onclick="resetView()">
+                <i class="fa-solid fa-compress"></i> View Full Body
+            </button>
+            <a href="predict.html" class="btn">
+                <i class="fa-solid fa-circle-arrow-left"></i> Go Back
+            </a>
+            <a href="predict.html" class="btn btn-primary">
+                <i class="fa-solid fa-redo"></i> New Analysis
+            </a>
+        </div>
+    </header>
+
+    <!-- Ambient Background Animations (behind everything) -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+    <div class="bg-grid"></div>
+
+    <!-- Small Health Score Graph Panel (bottom-right) -->
+    <div id="health-graph-panel">
+        <div class="graph-panel-header">
+            <span class="graph-panel-title"><i class="fa-solid fa-chart-line"></i> &nbsp;Health Score Trend</span>
+            <div class="graph-legend">
+                <span class="legend-you"><span class="legend-dot"
+                        style="background:#00e5ff;box-shadow:0 0 6px #00e5ff;"></span>You</span>
+                <span class="legend-who"><span class="legend-dot"
+                        style="background:#9047ff;box-shadow:0 0 6px #9047ff;"></span>WHO Avg</span>
+            </div>
+        </div>
+        <canvas id="health-graph-canvas"></canvas>
+    </div>
+
+    <!-- Floating Medical Particles -->
+    <div class="particles-container">
+        <i class="fa-solid fa-heart-pulse particle p1"></i>
+        <i class="fa-solid fa-dna         particle p2"></i>
+        <i class="fa-solid fa-lungs       particle p3"></i>
+        <i class="fa-solid fa-brain       particle p4"></i>
+        <i class="fa-solid fa-stethoscope particle p5"></i>
+        <i class="fa-solid fa-plus        particle p6"></i>
+        <i class="fa-solid fa-capsules    particle p7"></i>
+        <i class="fa-solid fa-heart       particle p8"></i>
+        <i class="fa-solid fa-microscope  particle p9"></i>
+        <i class="fa-solid fa-dna         particle p10"></i>
+        <i class="fa-solid fa-syringe     particle p11"></i>
+        <i class="fa-solid fa-syringe     particle p11"></i>
+        <i class="fa-solid fa-heart-pulse particle p12"></i>
+    </div>
+
+    <!-- AI Emergency Alerts Overlay -->
+    <div id="emergency-alert-panel"></div>
+
+
+    <!-- Neural Connectivity Canvas -->
+    <canvas id="neural-canvas"></canvas>
+
+
+    <!-- Interactive Human Body Illustration -->
+    <div id="viewport">
+        <div class="body-container">
+            <!-- The Realistic Medical Image generated -->
+            <img src="assets/realistic_human_body.png" alt="Realistic Human Anatomy" class="body-image">
+
+            <!-- SVG Overlay for clickable areas -->
+            <!-- viewBox coordinated roughly to the aspect ratio of the generated 1024x1024 image -->
+            <svg class="body-illustration" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet">
+
+                <!-- SVG path mappings adjusted for a central figure in a square frame -->
+
+                <!-- Brain Area -->
+                <g id="organ-brain" class="organ-hotspot" onclick="focusOrgan('Brain')">
+                    <ellipse cx="512" cy="110" rx="75" ry="90" />
+                </g>
+
+                <!-- Heart Area -->
+                <g id="organ-heart" class="organ-hotspot" onclick="focusOrgan('Heart')">
+                    <ellipse cx="530" cy="380" rx="35" ry="45" />
+                </g>
+
+                <!-- Lungs Area -->
+                <g id="organ-lungs" class="organ-hotspot" onclick="focusOrgan('Lungs')">
+                    <!-- Right Lung (viewer's left) -->
+                    <path d="M 430,320 Q 400,380 430,480 L 480,480 Q 490,380 470,320 Z" />
+                    <!-- Left Lung (viewer's right) -->
+                    <path d="M 594,320 Q 624,380 594,480 L 544,480 Q 534,380 554,320 Z" />
+                </g>
+
+                <!-- Liver Area -->
+                <g id="organ-liver" class="organ-hotspot" onclick="focusOrgan('Liver')">
+                    <ellipse cx="450" cy="490" rx="60" ry="40" transform="rotate(-15 450 490)" />
+                </g>
+
+                <!-- Kidneys Area -->
+                <g id="organ-kidneys" class="organ-hotspot" onclick="focusOrgan('Kidneys')">
+                    <!-- Left Kidney -->
+                    <ellipse cx="460" cy="550" rx="20" ry="35" transform="rotate(15 460 550)" />
+                    <!-- Right Kidney -->
+                    <ellipse cx="564" cy="550" rx="20" ry="35" transform="rotate(-15 564 550)" />
+                </g>
+
+                <!-- Bladder Area -->
+                <g id="organ-bladder" class="organ-hotspot" onclick="focusOrgan('Bladder')">
+                    <ellipse cx="512" cy="700" rx="25" ry="30" />
+                </g>
+
+            </svg>
+        </div>
+    </div>
+
+    <!-- Floating Disease Prediction Panel (Right Panel) -->
+    <div id="insight-card">
+        <div class="panel-header">
+            <div class="header-left">
+                <div class="organ-icon-container">
+                    <i id="card-organ-icon" class="fa-solid fa-heart-pulse"></i>
+                </div>
+                <div>
+                    <span class="section-title">Selected Organ</span>
+                    <h2 id="card-organ-name">Heart</h2>
+                </div>
+            </div>
+            <span id="card-risk-badge" class="risk-badge badge-medium">Medium Risk</span>
+        </div>
+
+        <span class="section-title">Reason Detected</span>
+        <ul id="card-reasons" class="reasons-list">
+            <li><i class="fa-solid fa-circle-exclamation"></i> Elevated indicators suggest vascular tension.</li>
+        </ul>
+
+        <span class="section-title">Possible Future Diseases</span>
+        <ul id="card-diseases" class="disease-list">
+            <li>Hypertension</li>
+            <li>Coronary Artery Disease</li>
+        </ul>
+
+        <span class="section-title">Preventive Measures</span>
+        <ul id="card-measures" class="preventive-list">
+            <li><i class="fa-solid fa-circle-check"></i> Exercise regularly</li>
+            <li><i class="fa-solid fa-circle-check"></i> Reduce salt intake</li>
+            <li><i class="fa-solid fa-circle-check"></i> Maintain healthy weight</li>
+        </ul>
+    </div>
+
+    <!-- Bottom Health Summary -->
+    <div class="summary-card">
+        <div class="score-section">
+            <div class="score-circle" id="summary-score">85</div>
+            <div>
+                <div class="section-title" style="margin-bottom: 2px;">Overall</div>
+                <div style="font-size: 1.1rem; font-weight: 600; color: #fff;">Health Score</div>
+            </div>
+        </div>
+
+        <div class="top-risks-section">
+            <span class="section-title">Top Potential Risks</span>
+            <div id="summary-risks">
+                <!-- Risk items will be injected here -->
+            </div>
+        </div>
+
+        <div class="advice-section">
+            <span class="section-title">Personalized AI Health Advice</span>
+            <p id="summary-advice">
+                Based on your profile, prioritizing cardiovascular exercise and minimizing dietary sodium will yield the
+                most significant improvements to your longevity.
+            </p>
+        </div>
+
+        <div class="video-cta-section">
+            <span class="section-title">AI Preventive Media</span>
+            <a href="health-video.html" class="video-btn">
+                <i class="fa-solid fa-circle-play"></i> Generate My Health Video
+            </a>
+            <p style="font-size: 0.7rem; color: rgba(255,255,255,0.4); text-align: center; font-style: italic;">
+                Your data stays local. We process your personalized preventive guide in real-time.
+            </p>
+        </div>
+    </div>
+
+    <script>
+        // Database of organ information, diseases, and measures
+        const medicalData = {
+            'Heart': {
+                name: 'Heart',
+                icon: 'fa-heart-pulse',
+                defaultReasons: ['Resting heart rate variations', 'Minor arterial stiffness'],
+                diseases: ['Hypertension', 'Coronary Artery Disease', 'Arrhythmia'],
+                measures: ['Exercise regularly (150 mins/week)', 'Reduce dietary salt intake', 'Maintain healthy body weight']
+            },
+            'Lungs': {
+                name: 'Lungs',
+                icon: 'fa-lungs',
+                defaultReasons: ['Shallow breathing patterns', 'Slightly reduced oxidative capacity'],
+                diseases: ['COPD Risk', 'Chronic Bronchitis', 'Asthma Aggravation'],
+                measures: ['Quit smoking immediately', 'Use HEPA air purifiers at home', 'Perform daily deep breathing exercises']
+            },
+            'Brain': {
+                name: 'Brain',
+                icon: 'fa-brain',
+                defaultReasons: ['Minor cognitive fatigue', 'Slight cortisol elevation'],
+                diseases: ['Chronic Insomnia', 'Cognitive Decline', 'Migraine Sensitivity'],
+                measures: ['Regulate sleep schedule (7-9 hours)', 'Practice daily mindfulness/meditation', 'Increase Omega-3 fatty acid intake']
+            },
+            'Liver': {
+                name: 'Liver',
+                icon: 'fa-vial',
+                defaultReasons: ['Trace metabolic stress markers', 'Mild toxin accumulation load'],
+                diseases: ['Fatty Liver Disease', 'Hepatic Inflammation', 'Metabolic Syndrome'],
+                measures: ['Eliminate refined sugars and alcohol', 'Consume more dark leafy greens', 'Stay highly hydrated']
+            },
+            'Kidneys': {
+                name: 'Kidneys',
+                icon: 'fa-filter',
+                defaultReasons: ['Occasional suboptimal hydration', 'Trace mineral imbalances'],
+                diseases: ['Kidney Stones', 'Chronic Kidney Disease', 'UTI Susceptibility'],
+                measures: ['Drink at least 2.5L of water daily', 'Moderate protein consumption', 'Monitor blood pressure regularly']
+            },
+            'Bladder': {
+                name: 'Bladder',
+                icon: 'fa-droplet',
+                defaultReasons: ['Minor urodynamic retention', 'Mild lower tract irritation'],
+                diseases: ['Urinary Tract Infection (UTI)', 'Overactive Bladder', 'Interstitial Cystitis'],
+                measures: ['Stay hydrated with plain water', 'Limit caffeine and alcohol intake', 'Practice pelvic floor exercises']
+            }
+        };
+
+        // Coordinates for the zoom effect (transform values)
+        // Adjusted for the new realistic image and SVG overlay
+        // We calculate X to offset the organ left so the card has room
+        const zoomTransforms = {
+            'Brain': { scale: 3.5, x: '-4%', y: '32%' },
+            'Heart': { scale: 3.5, x: '-6%', y: '13%' },
+            'Lungs': { scale: 3.0, x: '-5%', y: '13%' },
+            'Liver': { scale: 3.5, x: '1%', y: '2%' },
+            'Kidneys': { scale: 3.5, x: '-4%', y: '-4%' },
+            'Bladder': { scale: 3.5, x: '-4%', y: '-16%' }
+        };
+
+        // Initialize state variables
+        let currentRisks = {
+            'Brain': 'Low',
+            'Heart': 'Low',
+            'Lungs': 'Low',
+            'Liver': 'Low',
+            'Kidneys': 'Low',
+            'Bladder': 'Low'
+        };
+
+        // Object to store reasons we dynamically detect based on health data
+        let dynamicReasons = {
+            'Brain': [],
+            'Heart': [],
+            'Lungs': [],
+            'Liver': [],
+            'Kidneys': [],
+            'Bladder': []
+        };
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const healthData = JSON.parse(localStorage.getItem('healthData')) || {};
+
+            // AI Analysis Logic based on user inputs from predict.html
+            let score = 95;
+            let topRisksArray = [];
+
+            // Smoking habit -> Lungs
+            if (healthData.smoking === 'yes' || healthData.smoking === 'occasionally') {
+                currentRisks['Lungs'] = 'High';
+                document.getElementById('organ-lungs').classList.add('risk-high');
+                topRisksArray.push({ name: 'Pulmonary Inflammation', level: 'High' });
+                score -= 20;
+                dynamicReasons['Lungs'].push('Active smoking habit detected');
+                dynamicReasons['Lungs'].push('Low oxygen activity indicators');
+            }
+
+            // Exercise / Weight / Alcohol -> Heart & Liver
+            if (healthData.exercise === 'rarely' || healthData.exercise === 'none') {
+                currentRisks['Heart'] = currentRisks['Heart'] === 'High' ? 'High' : 'Medium';
+                document.getElementById('organ-heart').classList.add('risk-medium');
+                score -= 10;
+                topRisksArray.push({ name: 'Cardiovascular Load', level: 'Medium' });
+                dynamicReasons['Heart'].push('Sedentary lifestyle flagged');
+                dynamicReasons['Heart'].push('Reduced cardiovascular endurance');
+            }
+
+            if (healthData.alcohol === 'yes') {
+                currentRisks['Liver'] = 'Medium';
+                document.getElementById('organ-liver').classList.add('risk-medium');
+                score -= 5;
+                topRisksArray.push({ name: 'Hepatic Stress', level: 'Medium' });
+                dynamicReasons['Liver'].push('Frequent alcohol consumption reported');
+                dynamicReasons['Liver'].push('Elevated metabolic load');
+            }
+
+            // Sleep -> Brain
+            if (healthData.sleep && parseFloat(healthData.sleep) < 6) {
+                currentRisks['Brain'] = 'Medium';
+                document.getElementById('organ-brain').classList.add('risk-medium');
+                score -= 10;
+                topRisksArray.push({ name: 'Neurological Fatigue', level: 'Medium' });
+                dynamicReasons['Brain'].push('Inadequate sleep duration (< 6 hrs)');
+                dynamicReasons['Brain'].push('Elevated cortisol pattern detected');
+            }
+
+            // Family History / Diet
+            if (healthData.diabetes === 'yes') {
+                currentRisks['Kidneys'] = 'Medium';
+                document.getElementById('organ-kidneys').classList.add('risk-medium');
+                score -= 5;
+                topRisksArray.push({ name: 'Metabolic Risk', level: 'Medium' });
+                dynamicReasons['Kidneys'].push('Family history of metabolic conditions');
+            }
+
+            // Water Intake → Kidneys & Bladder
+            const waterLitres = parseFloat(healthData.water);
+            if (healthData.water && !isNaN(waterLitres)) {
+                if (waterLitres < 1.0) {
+                    // Very low hydration — High risk for kidneys
+                    currentRisks['Kidneys'] = 'High';
+                    document.getElementById('organ-kidneys').classList.add('risk-high');
+                    score -= 20;
+                    topRisksArray.push({ name: 'Severe Dehydration Risk', level: 'High' });
+                    dynamicReasons['Kidneys'].push(`Critical low water intake: only ${waterLitres}L/day`);
+                    dynamicReasons['Kidneys'].push('Risk of kidney stone formation elevated');
+                    // Also elevate Bladder
+                    currentRisks['Bladder'] = 'High';
+                    document.getElementById('organ-bladder').classList.add('risk-high');
+                    dynamicReasons['Bladder'].push('Insufficient daily fluid intake detected');
+                    dynamicReasons['Bladder'].push('Concentrated urine increases UTI & irritation risk');
+                    topRisksArray.push({ name: 'Bladder Irritation Risk', level: 'High' });
+                } else if (waterLitres < 1.5) {
+                    // Low hydration — Medium risk for kidneys
+                    if (currentRisks['Kidneys'] !== 'High') {
+                        currentRisks['Kidneys'] = 'Medium';
+                        document.getElementById('organ-kidneys').classList.add('risk-medium');
+                    }
+                    score -= 10;
+                    topRisksArray.push({ name: 'Dehydration Risk', level: 'Medium' });
+                    dynamicReasons['Kidneys'].push(`Low daily water intake noted: ${waterLitres}L (recommend ≥2L)`);
+                    dynamicReasons['Kidneys'].push('Suboptimal glomerular filtration conditions');
+                    dynamicReasons['Bladder'].push('Below-average fluid intake may irritate bladder lining');
+                    currentRisks['Bladder'] = 'Medium';
+                    document.getElementById('organ-bladder').classList.add('risk-medium');
+                } else if (waterLitres >= 2.0) {
+                    // Optimal hydration — Kidney bonus
+                    dynamicReasons['Kidneys'].push(`Excellent hydration detected: ${waterLitres}L/day`);
+                    dynamicReasons['Bladder'].push(`Good fluid intake supports bladder health: ${waterLitres}L/day`);
+                    score += 5; // small bonus
+                }
+            }
+
+            // Fallback if super healthy
+            if (topRisksArray.length === 0) {
+                topRisksArray.push({ name: 'No major risks detected', level: 'Optimal' });
+                document.getElementById('summary-advice').innerText = "Excellent lifestyle habits detected. Continue your current routine of balanced nutrition, hydration, and restorative sleep.";
+            }
+
+            // Update Summary UI
+            const finalScore = Math.max(score, 10);
+            document.getElementById('summary-score').innerText = finalScore;
+
+            // Draw live background graph with the real health score
+            drawHealthGraph(finalScore);
+
+            document.getElementById('summary-risks').innerHTML = topRisksArray.slice(0, 3).map(r => `
+                <div class="risk-item">
+                    <span class="name">${r.name}</span>
+                    <span class="level" style="color: ${r.level === 'High' ? '#f87171' : (r.level === 'Medium' ? '#facc15' : '#4ade80')}">${r.level}</span>
+                </div>
+            `).join('');
+
+            // Automatically zoom into the highest risk organ after a short delay
+            setTimeout(() => {
+                const organs = Object.keys(currentRisks);
+                let highestRiskOrgan = null;
+
+                // Find first high risk, else medium
+                for (let o of organs) {
+                    if (currentRisks[o] === 'High') { highestRiskOrgan = o; break; }
+                }
+                if (!highestRiskOrgan) {
+                    for (let o of organs) {
+                        if (currentRisks[o] === 'Medium') { highestRiskOrgan = o; break; }
+                    }
+                }
+
+                if (highestRiskOrgan) {
+                    focusOrgan(highestRiskOrgan);
+                } else {
+                    // If no risks, just focus Heart by default to show functionality
+                    focusOrgan('Heart');
+                }
+            }, 1000); // 1 second delay for smooth entry
+
+            // Start Neural Bio-Connectivity Animation
+            setTimeout(() => {
+                initNeuralConnectivity(healthData);
+            }, 1500);
+
+            // Run AI Emergency Risk Analysis
+            setTimeout(() => {
+                runEmergencyRiskAnalysis(healthData);
+            }, 2500);
+        });
+
+        // ── AI Emergency Risk Analysis Engine ──
+        function runEmergencyRiskAnalysis(healthData) {
+            const alertPanel = document.getElementById('emergency-alert-panel');
+            const weight = parseFloat(healthData.weight);
+            const height = parseFloat(healthData.height) / 100; // to meters
+            const bmi = weight / (height * height);
+
+            const risks = [];
+
+            // 1. BMI Check
+            if (bmi >= 30) {
+                risks.push({
+                    type: 'red',
+                    title: 'BMI Risk: Obesity Detected',
+                    message: `Your BMI is ${bmi.toFixed(1)}, which is in the obesity range. This may increase the risk of metabolic diseases and cardiovascular strain.`,
+                    actions: ['Maintain a balanced, calorie-conscious diet', 'Aim for gradual, sustainable weight loss', 'Consult a healthcare professional about weight management'],
+                    tags: ['Heart Risk', 'Metabolic', 'Priority'],
+                    organ: 'Heart'
+                });
+            } else if (bmi >= 25) {
+                risks.push({
+                    type: 'yellow',
+                    title: 'BMI Risk: Overweight Range',
+                    message: `Your BMI is ${bmi.toFixed(1)}, suggesting you are in the overweight range. Early preventive measures can reduce future health risks.`,
+                    actions: ['Increase physical activity levels', 'Monitor portion sizes', 'Prioritize whole foods over processed ones'],
+                    tags: ['Wellness', 'Preventive'],
+                    organ: 'Liver'
+                });
+            } else if (bmi < 18.5) {
+                risks.push({
+                    type: 'yellow',
+                    title: 'BMI Risk: Underweight Detected',
+                    message: `Your BMI of ${bmi.toFixed(1)} is below the healthy range, which may impact your immune system and energy levels.`,
+                    actions: ['Focus on nutrient-dense, high-protein foods', 'Consider strength training to build muscle mass', 'Consult a nutritionist for a healthy weight-gain plan'],
+                    tags: ['Nutrition', 'Immune'],
+                    organ: 'Liver'
+                });
+            }
+
+            // 2. Sleep Risk
+            const sleep = parseFloat(healthData.sleep);
+            if (sleep < 5) {
+                risks.push({
+                    type: 'red',
+                    title: 'Severe Sleep Deprivation Warning',
+                    message: "Critical low sleep detected (less than 5 hours). This can severely impact cognitive function, heart health, and your immune system.",
+                    actions: ['Establish a consistent 7-9 hour sleep schedule', 'Minimize screen time 1 hour before bed', 'Maintain a dark, cool sleep environment'],
+                    tags: ['Brain Health', 'Immune', 'Critical'],
+                    organ: 'Brain'
+                });
+            } else if (sleep < 6) {
+                risks.push({
+                    type: 'yellow',
+                    title: 'Sleep Deficiency Risk',
+                    message: "Your average sleep is less than 6 hours. Consistent sleep deficiency is linked to increased stress and long-term health risks.",
+                    actions: ['Prioritize consistent bedtimes', 'Limit caffeine intake in the afternoon', 'Adopt a relaxing pre-sleep routine'],
+                    tags: ['Restorative', 'Cognitive'],
+                    organ: 'Brain'
+                });
+            }
+
+            // 3. Smoking Risk
+            if (healthData.smoking === 'yes') {
+                risks.push({
+                    type: 'red',
+                    title: 'High Risk Alert: Smoking Habit',
+                    message: "Active smoking habit significantly increases risks to lung and cardiovascular health, including reduced arterial flexibility.",
+                    actions: ['Seek professional support to reduce or quit smoking', 'Increase antioxidant-rich food intake', 'Perform regular breathing exercises'],
+                    tags: ['Lungs', 'Oxygenation', 'High Risk'],
+                    organ: 'Lungs'
+                });
+            }
+
+            // 4. Activity Risk
+            if (healthData.exercise === 'rarely' || healthData.exercise === 'none') {
+                risks.push({
+                    type: 'yellow',
+                    title: 'Sedentary Lifestyle Alert',
+                    message: "Low physical activity detected (less than 2 times per week). A sedentary lifestyle may increase metabolic and cardiovascular risks.",
+                    actions: ['Aim for at least 150 minutes of moderate activity weekly', 'Use a standing desk or take walking breaks', 'Include 10-minute daily stretching sessions'],
+                    tags: ['Movement', 'Cardio'],
+                    organ: 'Heart'
+                });
+            }
+
+            // 5. Combined Risk Logic
+            if (risks.filter(r => r.type === 'red').length >= 2) {
+                risks.unshift({
+                    type: 'red',
+                    title: 'Priority 1: High Combined Health Risk',
+                    message: "We detected multiple lifestyle factors that may increase long-term cardiovascular and metabolic risk. Improving habits like sleep and activity is highly recommended.",
+                    actions: ['Schedule a comprehensive health check-up', 'Prioritize smoking cessation and sleep hygiene', 'Consult a professional to create a wellness roadmap'],
+                    tags: ['URGENT', 'CONSULT PROFESSIONAL'],
+                    organ: 'Heart'
+                });
+            }
+
+            // Display Alerts with staggered entry
+            risks.forEach((risk, index) => {
+                setTimeout(() => {
+                    const alert = document.createElement('div');
+                    alert.className = `alert-notification ${risk.type}`;
+                    alert.innerHTML = `
+                        <div class="alert-header">
+                            <i class="fa-solid ${risk.type === 'red' ? 'fa-triangle-exclamation' : 'fa-circle-exclamation'}"></i> ${risk.title}
+                        </div>
+                        <div class="alert-message">${risk.message}</div>
+                        <div class="alert-actions" style="margin-top: 5px; flex-direction: column; gap: 4px;">
+                            <div style="font-size: 0.7rem; font-weight: 800; opacity: 0.8; margin-bottom: 2px;">RECOVERY PLAN:</div>
+                            ${risk.actions.map(a => `<div style="font-size: 0.75rem; color: #cbd5e1; display:flex; gap:6px;"><i class="fa-solid fa-chevron-right" style="font-size:0.6rem; margin-top:3px; color: ${risk.type === 'red' ? '#f87171' : '#facc15'}"></i> ${a}</div>`).join('')}
+                        </div>
+                        <div class="alert-actions" style="margin-top: 10px;">
+                            ${risk.tags.map(t => `<span class="alert-tag ${risk.type === 'yellow' ? 'warning' : ''}">${t}</span>`).join('')}
+                        </div>
+                    `;
+                    alertPanel.appendChild(alert);
+
+                    // Highlight organ
+                    const organEl = document.getElementById('organ-' + risk.organ.toLowerCase());
+                    if (organEl) {
+                        organEl.classList.add(risk.type === 'red' ? 'risk-high' : 'risk-medium');
+                    }
+
+                    // Play sound
+                    playAlertSound(risk.type);
+                }, index * 800);
+            });
+        }
+
+        function playAlertSound(type) {
+            const context = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = context.createOscillator();
+            const gain = context.createGain();
+
+            if (type === 'red') {
+                // Urgent, stronger tone
+                oscillator.type = 'sawtooth';
+                oscillator.frequency.setValueAtTime(392, context.currentTime); // G4
+                oscillator.frequency.exponentialRampToValueAtTime(329.63, context.currentTime + 0.2); // E4
+                gain.gain.setValueAtTime(0.08, context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.3);
+            } else {
+                // Softer warning tone
+                oscillator.type = 'sine';
+                oscillator.frequency.setValueAtTime(880, context.currentTime); // A5
+                gain.gain.setValueAtTime(0.03, context.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, context.currentTime + 0.2);
+            }
+
+            oscillator.connect(gain);
+            gain.connect(context.destination);
+
+            oscillator.start();
+            oscillator.stop(context.currentTime + (type === 'red' ? 0.3 : 0.2));
+        }
+
+        // ── Neural Bio-Connectivity Logic ──
+        function initNeuralConnectivity(healthData) {
+            const canvas = document.getElementById('neural-canvas');
+            if (!canvas) return;
+            const ctx = canvas.getContext('2d');
+
+            const resize = () => {
+                canvas.width = window.innerWidth;
+                canvas.height = window.innerHeight;
+            };
+            window.addEventListener('resize', resize);
+            resize();
+
+            const connections = [];
+
+            // Mapping habits to organs and their SVG coordinates (relative to 1024x1024)
+            const habitOrigins = { x: 380, y: window.innerHeight / 2 }; // Near summary card
+
+            if (healthData.smoking === 'yes') {
+                connections.push({ to: { x: 450, y: 400 }, label: 'Smoking', color: '#f87171' }); // Lungs
+            }
+            if (healthData.alcohol === 'yes') {
+                connections.push({ to: { x: 450, y: 490 }, label: 'Alcohol', color: '#facc15' }); // Liver
+            }
+            if (healthData.exercise === 'rarely' || healthData.exercise === 'none') {
+                connections.push({ to: { x: 530, y: 380 }, label: 'Sedentary', color: '#facc15' }); // Heart
+            }
+            if (parseFloat(healthData.sleep) < 6) {
+                connections.push({ to: { x: 512, y: 110 }, label: 'Sleep', color: '#9047ff' }); // Brain
+            }
+
+            function animate() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+                // Get viewport transform to match canvas lines to zoomed body
+                const viewport = document.getElementById('viewport');
+                const transform = window.getComputedStyle(viewport).transform;
+                const matrix = new DOMMatrix(transform);
+
+                connections.forEach(conn => {
+                    // Map SVG coordinate to screen coordinate
+                    const bodyRect = document.querySelector('.body-container').getBoundingClientRect();
+                    const scaleX = bodyRect.width / 1024;
+                    const scaleY = bodyRect.height / 1024;
+
+                    const targetX = bodyRect.left + conn.to.x * scaleX;
+                    const targetY = bodyRect.top + conn.to.y * scaleY;
+
+                    // Draw glowing curve
+                    ctx.beginPath();
+                    ctx.moveTo(habitOrigins.x, habitOrigins.y);
+
+                    const cp1x = habitOrigins.x + (targetX - habitOrigins.x) / 2;
+                    const cp1y = habitOrigins.y;
+                    const cp2x = habitOrigins.x + (targetX - habitOrigins.x) / 2;
+                    const cp2y = targetY;
+
+                    ctx.bezierCurveTo(cp1x, cp1y, cp2x, cp2y, targetX, targetY);
+
+                    const time = Date.now() * 0.002;
+                    const alpha = 0.3 + Math.sin(time) * 0.2;
+
+                    ctx.strokeStyle = conn.color;
+                    ctx.globalAlpha = alpha;
+                    ctx.lineWidth = 2;
+                    ctx.setLineDash([5, 15]);
+                    ctx.lineDashOffset = -time * 20;
+                    ctx.stroke();
+
+                    // Glow effect
+                    ctx.globalAlpha = alpha * 0.5;
+                    ctx.lineWidth = 6;
+                    ctx.shadowBlur = 15;
+                    ctx.shadowColor = conn.color;
+                    ctx.stroke();
+
+                    ctx.setLineDash([]);
+                    ctx.globalAlpha = 1;
+                });
+
+                requestAnimationFrame(animate);
+            }
+            animate();
+        }
+
+        // The function that triggers zooming and UI updates
+        function focusOrgan(organId) {
+            // Apply Zoom
+            const vp = document.getElementById('viewport');
+            const transform = zoomTransforms[organId];
+            vp.style.transform = `scale(${transform.scale}) translate(${transform.x}, ${transform.y})`;
+
+            // Set body state to zoomed (blurs the outline and hides summary)
+            document.body.classList.add('zoomed');
+
+            // Show reset button
+            document.getElementById('reset-zoom-btn').style.display = 'flex';
+
+            // Highlight the active SVG organ
+            document.querySelectorAll('.organ-hotspot').forEach(el => el.classList.remove('active'));
+            const activeOrgan = document.getElementById('organ-' + organId.toLowerCase());
+            if (activeOrgan) activeOrgan.classList.add('active');
+
+            // Populate and show the Insight Card
+            const card = document.getElementById('insight-card');
+            const data = medicalData[organId];
+            const riskLevel = currentRisks[organId];
+
+            document.getElementById('card-organ-name').innerText = data.name;
+            document.getElementById('card-organ-icon').className = `fa-solid ${data.icon}`;
+
+            const badge = document.getElementById('card-risk-badge');
+            badge.innerText = riskLevel + ' Risk';
+            badge.className = `risk-badge badge-${riskLevel.toLowerCase()}`;
+
+            // Populate Dynamic Reasons
+            const detectedReasons = dynamicReasons[organId] && dynamicReasons[organId].length > 0 ? dynamicReasons[organId] : data.defaultReasons;
+            document.getElementById('card-reasons').innerHTML = detectedReasons.map(r => `
+                <li><i class="fa-solid fa-circle-exclamation" style="color: ${riskLevel === 'High' ? '#f87171' : (riskLevel === 'Medium' ? '#facc15' : '#4ade80')};"></i> ${r}</li>
+            `).join('');
+
+            document.getElementById('card-diseases').innerHTML = data.diseases.map(d => `<li>${d}</li>`).join('');
+
+            document.getElementById('card-measures').innerHTML = data.measures.map(m => `
+                <li><i class="fa-solid fa-circle-check"></i> ${m}</li>
+            `).join('');
+
+
+            card.classList.add('visible');
+
+            // Hide the health graph when focusing on an organ
+            const graphPanel = document.getElementById('health-graph-panel');
+            if (graphPanel) graphPanel.classList.remove('visible');
+        }
+
+        function resetView() {
+            // Reset viewport
+            const vp = document.getElementById('viewport');
+            vp.style.transform = 'scale(1) translate(0, 0)';
+
+            // Remove zoomed state
+            document.body.classList.remove('zoomed');
+
+            // Hide reset button
+            document.getElementById('reset-zoom-btn').style.display = 'none';
+
+            // Remove active highlights
+            document.querySelectorAll('.organ-hotspot').forEach(el => el.classList.remove('active'));
+
+            // Hide the insight card
+            document.getElementById('insight-card').classList.remove('visible');
+
+            // Show the health graph when viewing full body
+            const graphPanel = document.getElementById('health-graph-panel');
+            if (graphPanel) graphPanel.classList.add('visible');
+
+            // Clear emergency alerts when viewing full body
+            const alertPanel = document.getElementById('emergency-alert-panel');
+            if (alertPanel) alertPanel.innerHTML = '';
+        }
+
+        /* ═══════════════════════════════════════════
+           LIVE HEALTH GRAPH — Canvas Background Chart
+           ═══════════════════════════════════════════ */
+        function drawHealthGraph(healthScore) {
+            const canvas = document.getElementById('health-graph-canvas');
+            const panel = document.getElementById('health-graph-panel');
+            if (!canvas || !panel) return;
+
+            // Set canvas size to match the container's visual size
+            canvas.width = canvas.offsetWidth;
+            canvas.height = canvas.offsetHeight;
+
+            const ctx = canvas.getContext('2d');
+            const W = canvas.width;
+            const H = canvas.height;
+
+            // --- Configuration ---
+            const WHO_SCORE = 75;   // WHO average line
+            const USER_SCORE = Math.max(10, Math.min(100, healthScore));
+            const CHART_PADDING = { top: 20, right: 30, bottom: 20, left: 30 };
+            const cW = W - CHART_PADDING.left - CHART_PADDING.right;
+            const cH = H - CHART_PADDING.top - CHART_PADDING.bottom;
+            const SEGMENTS = 9; // reduced points for smaller graph
+
+            // Helper: convert a score (0-100) to a Y canvas coordinate
+            function scoreToY(score) {
+                return CHART_PADDING.top + cH - (score / 100) * cH;
+            }
+
+            // --- Generate points ---
+            const userPoints = [];
+            for (let i = 0; i < SEGMENTS; i++) {
+                const t = i / (SEGMENTS - 1);
+                const noise = (Math.random() - 0.5) * 4;
+                const baseVal = WHO_SCORE + (USER_SCORE - WHO_SCORE) * t;
+                userPoints.push(baseVal + noise * (1 - t));
+            }
+            userPoints[SEGMENTS - 1] = USER_SCORE;
+
+            const whoPoints = [];
+            for (let i = 0; i < SEGMENTS; i++) {
+                whoPoints.push(WHO_SCORE + Math.sin(i * 1.2) * 2);
+            }
+
+            // Clear
+            ctx.clearRect(0, 0, W, H);
+
+            // --- Draw Grid ---
+            ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+            ctx.lineWidth = 1;
+            const gridRows = 4;
+            for (let r = 0; r <= gridRows; r++) {
+                const y = CHART_PADDING.top + (r / gridRows) * cH;
+                ctx.beginPath(); ctx.moveTo(CHART_PADDING.left, y); ctx.lineTo(W - CHART_PADDING.right, y); ctx.stroke();
+            }
+
+            // --- Draw WHO Line (Solid and Bright) ---
+            ctx.save();
+            ctx.strokeStyle = 'rgba(144, 71, 255, 0.9)'; // Brighter purple
+            ctx.lineWidth = 2;
+            ctx.shadowBlur = 8;
+            ctx.shadowColor = 'rgba(144, 71, 255, 0.4)';
+            ctx.beginPath();
+            whoPoints.forEach((score, i) => {
+                const x = CHART_PADDING.left + (i / (SEGMENTS - 1)) * cW;
+                const y = scoreToY(score);
+                i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+            });
+            ctx.stroke();
+            ctx.restore();
+
+            // --- Draw User Line ---
+            let progress = 0;
+            const totalDuration = 45;
+
+            function animateUserLine() {
+                ctx.clearRect(0, 0, W, H);
+
+                // Re-draw grid & who line
+                ctx.strokeStyle = 'rgba(0, 229, 255, 0.08)';
+                for (let r = 0; r <= gridRows; r++) {
+                    const y = CHART_PADDING.top + (r / gridRows) * cH;
+                    ctx.beginPath(); ctx.moveTo(CHART_PADDING.left, y); ctx.lineTo(W - CHART_PADDING.right, y); ctx.stroke();
+                }
+                ctx.save();
+                ctx.strokeStyle = 'rgba(144, 71, 255, 0.9)';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                whoPoints.forEach((score, i) => {
+                    const x = CHART_PADDING.left + (i / (SEGMENTS - 1)) * cW;
+                    const y = scoreToY(score);
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                });
+                ctx.stroke();
+                ctx.restore();
+
+                progress++;
+                const fraction = Math.min(progress / totalDuration, 1);
+                const pointsToDraw = Math.floor(fraction * (SEGMENTS - 1)) + 1;
+
+                // Draw user line
+                ctx.save();
+                ctx.strokeStyle = '#00e5ff';
+                ctx.lineWidth = 2.5;
+                ctx.shadowBlur = 10;
+                ctx.shadowColor = 'rgba(0, 229, 255, 0.5)';
+                ctx.beginPath();
+                for (let i = 0; i < pointsToDraw && i < SEGMENTS; i++) {
+                    const x = CHART_PADDING.left + (i / (SEGMENTS - 1)) * cW;
+                    const y = scoreToY(userPoints[i]);
+                    i === 0 ? ctx.moveTo(x, y) : ctx.lineTo(x, y);
+                }
+                ctx.stroke();
+
+                // Fill
+                const lastIdx = Math.min(pointsToDraw - 1, SEGMENTS - 1);
+                const fillEndX = CHART_PADDING.left + (lastIdx / (SEGMENTS - 1)) * cW;
+                const grad = ctx.createLinearGradient(0, CHART_PADDING.top, 0, H - CHART_PADDING.bottom);
+                grad.addColorStop(0, 'rgba(0, 229, 255, 0.1)');
+                grad.addColorStop(1, 'rgba(0, 229, 255, 0)');
+                ctx.fillStyle = grad;
+                ctx.beginPath();
+                ctx.moveTo(CHART_PADDING.left, H - CHART_PADDING.bottom);
+                for (let i = 0; i < pointsToDraw && i < SEGMENTS; i++) {
+                    const x = CHART_PADDING.left + (i / (SEGMENTS - 1)) * cW;
+                    const y = scoreToY(userPoints[i]);
+                    ctx.lineTo(x, y);
+                }
+                ctx.lineTo(fillEndX, H - CHART_PADDING.bottom);
+                ctx.fill();
+
+                // Draw dots
+                for (let i = 0; i < pointsToDraw && i < SEGMENTS; i++) {
+                    const x = CHART_PADDING.left + (i / (SEGMENTS - 1)) * cW;
+                    const y = scoreToY(userPoints[i]);
+                    ctx.beginPath();
+                    ctx.arc(x, y, i === pointsToDraw - 1 ? 4 : 2, 0, Math.PI * 2);
+                    ctx.fillStyle = i === pointsToDraw - 1 ? '#00e5ff' : 'rgba(0,229,255,0.7)';
+                    ctx.fill();
+                }
+                ctx.restore();
+
+                if (fraction < 1) {
+                    requestAnimationFrame(animateUserLine);
+                }
+            }
+
+            animateUserLine();
+        }
+
+        // Handle canvas redraw on window resize
+        window.addEventListener('resize', () => {
+            const scoreEl = document.getElementById('summary-score');
+            if (scoreEl) drawHealthGraph(parseInt(scoreEl.innerText) || 85);
+        });
+
+        // Update Final Disclaimer with exact text provided by user
+        document.addEventListener('DOMContentLoaded', () => {
+            const disclaimers = document.querySelectorAll('.disclaimer');
+            const officialDisclaimer = "This alert system provides general health risk insights based on lifestyle data and is not a medical diagnostic tool. For medical concerns, please consult a qualified healthcare professional.";
+            disclaimers.forEach(d => {
+                d.innerText = officialDisclaimer;
+            });
+        });
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,454 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predectiva — 3D Health Prediction</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root { --bg: #0b0f19; --accent: #00e5ff; --secondary: #9047ff; --danger: #f87171; --warn: #facc15; --safe: #4ade80; }
+        * { margin:0; padding:0; box-sizing:border-box; }
+        body { font-family:'Montserrat',sans-serif; background:radial-gradient(circle at center,#1a1b41 0%,var(--bg) 100%); color:#f8fafc; overflow-x:hidden; min-height:100vh; }
+        .bg-orb { position:fixed; border-radius:50%; filter:blur(80px); z-index:0; pointer-events:none; opacity:.12; animation:orbF 15s ease-in-out infinite alternate; }
+        .orb1 { width:600px; height:600px; background:var(--accent); top:-10%; left:-10%; }
+        .orb2 { width:500px; height:500px; background:var(--secondary); bottom:-10%; right:-10%; }
+        @keyframes orbF { 0%{transform:translate(0,0) scale(1)} 100%{transform:translate(50px,-50px) scale(1.1)} }
+
+        nav { position:fixed; top:0; left:0; right:0; z-index:100; display:flex; align-items:center; justify-content:space-between; padding:18px 40px; background:rgba(15,23,42,.7); backdrop-filter:blur(20px); border-bottom:1px solid rgba(255,255,255,.06); }
+        .nav-logo { font-size:1.3rem; font-weight:700; color:#38bdf8; display:flex; align-items:center; gap:10px; }
+        .nav-user { font-size:.85rem; color:#94a3b8; }
+        .nav-user strong { color:#e2e8f0; }
+        .back-btn { background:rgba(255,255,255,.05); border:1px solid rgba(255,255,255,.1); color:#94a3b8; padding:10px 20px; border-radius:10px; font-family:inherit; font-size:.8rem; font-weight:600; cursor:pointer; transition:all .3s; text-decoration:none; display:flex; align-items:center; gap:8px; }
+        .back-btn:hover { border-color:rgba(56,189,248,.3); color:#38bdf8; }
+
+        .main-layout { display:flex; min-height:100vh; padding:90px 40px 40px; gap:40px; position:relative; z-index:1; }
+
+        /* 3D Body */
+        .body-viewport { flex:1.2; display:flex; align-items:center; justify-content:center; perspective:1200px; }
+        .body-container { height:85vh; width:100%; position:relative; filter:drop-shadow(0 0 40px rgba(0, 229, 255, 0.2)); transform-style:preserve-3d; transition:transform 1.2s cubic-bezier(0.25, 1, 0.5, 1); display:flex; justify-content:center; transform-origin:center; }
+        body.zoomed .body-container { filter:drop-shadow(0 0 60px rgba(0, 229, 255, 0.4)); }
+        .body-container:hover { animation-play-state:paused; }
+
+        .body-image { height:100%; width:auto; object-fit:contain; border-radius:20px; filter:invert(1) hue-rotate(180deg) drop-shadow(0 0 20px rgba(0, 229, 255, 0.4)); mix-blend-mode:screen; opacity:0.9; }
+        .body-illustration { position:absolute; top:0; left:0; width:100%; height:100%; z-index:10; }
+        .organ-zone { fill:rgba(0,229,255,.03); stroke:rgba(0,229,255,.2); stroke-width:1.5; cursor:pointer; transition:all .5s; }
+        .organ-zone:hover { fill:rgba(0,229,255,.15); stroke:var(--accent); filter:drop-shadow(0 0 15px var(--accent)); }
+        .organ-zone.risk-low { stroke:var(--safe); fill:rgba(74,222,128,.05); }
+        .organ-zone.risk-low:hover { fill:rgba(74,222,128,.2); filter:drop-shadow(0 0 15px var(--safe)); }
+        .organ-zone.risk-med { stroke:var(--warn); fill:rgba(250,204,21,.08); animation:pulseMed 2s infinite; }
+        .organ-zone.risk-med:hover { fill:rgba(250,204,21,.25); filter:drop-shadow(0 0 15px var(--warn)); }
+        .organ-zone.risk-high { stroke:var(--danger); fill:rgba(248,113,113,.1); stroke-width:2.5; animation:pulseHigh 1.5s infinite; }
+        .organ-zone.risk-high:hover { fill:rgba(248,113,113,.3); filter:drop-shadow(0 0 20px var(--danger)); }
+        @keyframes pulseMed { 0%,100%{fill:rgba(250,204,21,.08)} 50%{fill:rgba(250,204,21,.18)} }
+        @keyframes pulseHigh { 0%,100%{fill:rgba(248,113,113,.1)} 50%{fill:rgba(248,113,113,.25)} }
+
+
+
+        /* Info Panel */
+        .info-panel { flex:1; max-width:520px; max-height:calc(100vh - 130px); overflow-y:auto; background:rgba(15,20,35,.85); backdrop-filter:blur(30px); border:1px solid rgba(255,255,255,.08); border-radius:28px; padding:40px 35px; box-shadow:0 40px 80px rgba(0,0,0,.5); }
+        .info-panel::-webkit-scrollbar { width:5px; }
+        .info-panel::-webkit-scrollbar-thumb { background:rgba(0,229,255,.3); border-radius:10px; }
+
+        .user-header { display:flex; align-items:center; gap:15px; margin-bottom:30px; padding-bottom:20px; border-bottom:1px solid rgba(255,255,255,.08); }
+        .user-avatar { width:50px; height:50px; border-radius:16px; background:linear-gradient(135deg,rgba(56,189,248,.15),rgba(129,140,248,.15)); border:1px solid rgba(56,189,248,.3); display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:#38bdf8; }
+        .user-name { font-size:1.2rem; font-weight:700; }
+        .user-email { font-size:.8rem; color:#64748b; }
+
+        .section-label { font-size:.7rem; font-weight:800; color:var(--accent); text-transform:uppercase; letter-spacing:2px; margin:25px 0 15px; display:flex; align-items:center; gap:8px; }
+        .section-label::before { content:''; width:4px; height:14px; background:var(--accent); border-radius:4px; box-shadow:0 0 8px var(--accent); }
+
+        .risk-card { background:rgba(0,0,0,.25); border:1px solid rgba(255,255,255,.06); border-radius:16px; padding:18px 20px; margin-bottom:12px; transition:all .3s; cursor:pointer; }
+        .risk-card:hover { border-color:rgba(0,229,255,.2); transform:translateX(5px); }
+        .risk-card-top { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; }
+        .risk-organ { font-weight:700; font-size:.95rem; display:flex; align-items:center; gap:10px; }
+        .risk-organ i { font-size:1rem; }
+        .risk-badge { padding:4px 12px; border-radius:20px; font-size:.65rem; font-weight:700; text-transform:uppercase; letter-spacing:.5px; }
+        .badge-low { background:rgba(74,222,128,.12); color:var(--safe); border:1px solid rgba(74,222,128,.25); }
+        .badge-med { background:rgba(250,204,21,.12); color:var(--warn); border:1px solid rgba(250,204,21,.25); }
+        .badge-high { background:rgba(248,113,113,.12); color:var(--danger); border:1px solid rgba(248,113,113,.25); }
+
+        .risk-bar-bg { width:100%; height:5px; background:rgba(255,255,255,.08); border-radius:5px; overflow:hidden; }
+        .risk-bar-fill { height:100%; border-radius:5px; transition:width 1.5s ease; }
+        .fill-low { background:var(--safe); box-shadow:0 0 8px var(--safe); }
+        .fill-med { background:var(--warn); box-shadow:0 0 8px var(--warn); }
+        .fill-high { background:linear-gradient(90deg,var(--warn),var(--danger)); box-shadow:0 0 8px var(--danger); }
+
+        .risk-details { margin-top:10px; font-size:.8rem; color:#94a3b8; line-height:1.6; }
+        .risk-details ul { list-style:none; margin-top:8px; }
+        .risk-details li { margin-bottom:5px; display:flex; align-items:flex-start; gap:8px; }
+        .risk-details li i { color:var(--safe); margin-top:3px; font-size:.75rem; }
+
+        .diseases-list { list-style:none; }
+        .diseases-list li { font-size:.9rem; color:#e2e8f0; font-weight:500; margin-bottom:8px; display:flex; align-items:center; gap:10px; }
+        .diseases-list li::before { content:''; width:6px; height:6px; background:var(--accent); border-radius:50%; box-shadow:0 0 8px var(--accent); flex-shrink:0; }
+
+        .overall-score { text-align:center; margin:30px 0; }
+        .score-ring { width:100px; height:100px; margin:0 auto 12px; position:relative; }
+        .score-ring svg { width:100%; height:100%; transform:rotate(-90deg); }
+        .score-ring circle { fill:none; stroke-width:6; }
+        .score-ring .bg { stroke:rgba(255,255,255,.06); }
+        .score-ring .fg { stroke:var(--accent); stroke-linecap:round; transition:stroke-dashoffset 2s ease; }
+        .score-num { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-size:1.6rem; font-weight:800; }
+        .score-label { font-size:.8rem; color:#64748b; font-weight:600; }
+
+        .disclaimer { font-size:.7rem; color:rgba(255,255,255,.3); text-align:center; margin-top:30px; border-top:1px dotted rgba(255,255,255,.08); padding-top:15px; font-style:italic; }
+
+        @media(max-width:1000px) {
+            .main-layout {
+                flex-direction: column;
+                align-items: center;
+                padding: 90px 20px 20px;
+                gap: 20px;
+            }
+            .body-viewport {
+                height: 420px;
+                width: 100%;
+                flex: none;
+            }
+            .body-container {
+                height: 100%;
+            }
+            .info-panel {
+                max-width: 100%;
+                flex: none;
+                max-height: none; /* Let content height be natural for scroll on mobile */
+            }
+        }
+
+        @media(max-width: 768px) {
+            nav {
+                padding: 12px 20px;
+                flex-wrap: wrap;
+                gap: 10px;
+            }
+            .nav-logo {
+                font-size: 1.15rem;
+            }
+            .nav-user {
+                font-size: 0.8rem;
+                order: 3;
+                width: 100%;
+                text-align: center;
+            }
+            .back-btn {
+                padding: 8px 14px;
+                font-size: 0.75rem;
+            }
+        }
+
+        @media(max-width: 576px) {
+            .main-layout {
+                padding: 120px 10px 20px;
+            }
+            .body-viewport {
+                height: 320px;
+            }
+            .info-panel {
+                padding: 25px 20px;
+                border-radius: 20px;
+            }
+            .risk-card {
+                padding: 14px 16px;
+            }
+            .risk-organ {
+                font-size: 0.85rem;
+            }
+            .risk-details {
+                font-size: 0.75rem;
+            }
+            .diseases-list li {
+                font-size: 0.85rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-orb orb1"></div>
+    <div class="bg-orb orb2"></div>
+
+    <nav>
+        <div class="nav-logo"><i class="fa-solid fa-heart-pulse"></i> Predectiva</div>
+        <div class="nav-user" id="nav-user-info"></div>
+        <div style="display:flex; gap:15px;">
+            <button id="reset-zoom-btn" class="back-btn" style="display:none;" onclick="resetView()"><i class="fa-solid fa-compress"></i> Reset View</button>
+            <a href="admin-dashboard.html" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Dashboard</a>
+        </div>
+    </nav>
+
+    <div class="main-layout">
+        <div class="body-viewport">
+            <div class="body-container">
+                <img src="assets/realistic_human_body.png" alt="Human Anatomy" class="body-image">
+                <svg class="body-illustration" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet">
+                    <!-- Brain -->
+                    <g id="oz-brain" class="organ-zone" onclick="showOrgan('brain')">
+                        <ellipse cx="512" cy="110" rx="75" ry="90" />
+                    </g>
+                    <!-- Heart -->
+                    <g id="oz-heart" class="organ-zone" onclick="showOrgan('heart')">
+                        <ellipse cx="530" cy="380" rx="40" ry="50" />
+                    </g>
+                    <!-- Lungs -->
+                    <g id="oz-lungs" class="organ-zone" onclick="showOrgan('lungs')">
+                        <path d="M 430,320 Q 400,380 430,480 L 480,480 Q 490,380 470,320 Z" />
+                        <path d="M 594,320 Q 624,380 594,480 L 544,480 Q 534,380 554,320 Z" />
+                    </g>
+                    <!-- Digestive/Metabolic (Liver/Gut area) -->
+                    <g id="oz-liver" class="organ-zone" onclick="showOrgan('metabolic')">
+                        <ellipse cx="512" cy="550" rx="100" ry="80" />
+                    </g>
+                    <!-- Bone/Muscle -->
+                    <g id="oz-skeletal" class="organ-zone" onclick="showOrgan('skeletal')">
+                        <path d="M500,750 L500,980 M524,750 L524,980" stroke="white" stroke-width="40" opacity="0.1" />
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <div class="info-panel" id="info-panel">
+            <div class="user-header" id="user-header"></div>
+            <div class="overall-score">
+                <div class="score-ring">
+                    <svg viewBox="0 0 120 120"><circle class="bg" cx="60" cy="60" r="52"/><circle class="fg" id="score-circle" cx="60" cy="60" r="52" stroke-dasharray="327" stroke-dashoffset="327"/></svg>
+                    <div class="score-num" id="score-num">—</div>
+                </div>
+                <div class="score-label">Overall Health Score</div>
+            </div>
+            <div class="section-label">Organ Risk Assessment</div>
+            <div id="risk-cards"></div>
+            <div class="section-label">Predicted Disease Risks</div>
+            <ul class="diseases-list" id="diseases-list"></ul>
+            <p class="disclaimer">* AI-generated predictions based on lifestyle data. Not a medical diagnosis. Consult a healthcare professional.</p>
+        </div>
+    </div>
+
+    <script>
+        let risks = {};
+        let organKeys = [];
+        const organMap = { brain:'oz-brain', heart:'oz-heart', lungs:'oz-lungs', metabolic:'oz-liver', skeletal:'oz-skeletal' };
+
+        const params = new URLSearchParams(window.location.search);
+        const email = params.get('email');
+        const id = params.get('id');
+        if (!email && !id) { window.location.href = 'admin-dashboard.html'; }
+
+        async function fetchUserData() {
+            if (id) {
+                try {
+                    const API_BASE = window.location.port === '5000' ? '' : 'http://localhost:5000';
+                    const res = await fetch(`${API_BASE}/api/health/${id}`, {
+                        headers: {
+                            'Authorization': 'Bearer ' + sessionStorage.getItem('token')
+                        },
+                        credentials: 'include'
+                    });
+                    const data = await res.json();
+                    if (data.success) {
+                        return { user: data.data.user || {}, healthData: data.data };
+                    }
+                } catch (err) {
+                    console.error("Backend fetch error, using local fallback...", err);
+                }
+            }
+            
+            // Local storage fallback
+            const usersDB = JSON.parse(localStorage.getItem('usersDB') || '[]');
+            const fallbackUser = usersDB.find(u => u.email === email) || { fullname: 'Fallback User', email: email || 'user@example.com' };
+            const fallbackHealth = JSON.parse(localStorage.getItem('healthData_' + email) || '{}');
+            return { user: fallbackUser, healthData: fallbackHealth };
+        }
+
+        // Risk calculation
+        function calcRisks(d) {
+            const w = parseFloat(d.weight)||70, h = (parseFloat(d.height)||170)/100;
+            const bmi = w/(h*h);
+            const age = parseInt(d.age)||25;
+            const sleep = parseFloat(d.sleep)||8;
+            const risks = {};
+
+            // Brain
+            let brainScore = 15;
+            if(sleep<6) brainScore+=35; else if(sleep<7) brainScore+=20;
+            if(age>50) brainScore+=15;
+            if(d.alcohol==='yes') brainScore+=10;
+            risks.brain = { score:Math.min(brainScore,95), icon:'fa-brain', name:'Brain & Mental Health' };
+
+            // Heart
+            let heartScore = 10;
+            if(bmi>=30) heartScore+=30; else if(bmi>=25) heartScore+=18;
+            if(d.smoking==='yes') heartScore+=20; else if(d.smoking==='occasionally') heartScore+=10;
+            if(d.heart==='yes') heartScore+=20;
+            if(d.exercise==='none') heartScore+=15; else if(d.exercise==='rarely') heartScore+=8;
+            if(d.bp==='yes') heartScore+=12;
+            risks.heart = { score:Math.min(heartScore,95), icon:'fa-heart-pulse', name:'Cardiovascular' };
+
+            // Lungs
+            let lungScore = 10;
+            if(d.smoking==='yes') lungScore+=40; else if(d.smoking==='occasionally') lungScore+=20;
+            if(d.exercise==='none') lungScore+=12;
+            risks.lungs = { score:Math.min(lungScore,95), icon:'fa-lungs', name:'Respiratory' };
+
+            // Metabolic
+            let metScore = 12;
+            if(bmi>=30) metScore+=25; else if(bmi>=25) metScore+=15;
+            if(d.diabetes==='yes') metScore+=25;
+            if(d.alcohol==='yes') metScore+=15; else if(d.alcohol==='occasionally') metScore+=8;
+            if(parseFloat(d.water||3)<2) metScore+=10;
+            risks.metabolic = { score:Math.min(metScore,95), icon:'fa-stomach', name:'Metabolic & Digestive' };
+
+            // Skeletal
+            let skelScore = 10;
+            if(d.exercise==='none') skelScore+=25; else if(d.exercise==='rarely') skelScore+=15;
+            if(age>45) skelScore+=15;
+            if(bmi>=30) skelScore+=10;
+            risks.skeletal = { score:Math.min(skelScore,95), icon:'fa-bone', name:'Skeletal & Muscular' };
+
+            return risks;
+        }
+
+        function getLevel(score) { return score>=50?'high':score>=30?'med':'low'; }
+        function getLevelText(score) { return score>=50?'High Risk':score>=30?'Moderate':' Low Risk'; }
+
+        async function run() {
+            const { user, healthData } = await fetchUserData();
+            const activeEmail = user.email || email || 'user@example.com';
+
+            // Populate user info
+            document.getElementById('nav-user-info').innerHTML = `Viewing: <strong>${user.fullname || activeEmail}</strong>`;
+            document.getElementById('user-header').innerHTML = `
+                <div class="user-avatar"><i class="fa-solid fa-user"></i></div>
+                <div><div class="user-name">${user.fullname || 'Unknown'}</div><div class="user-email">${activeEmail}</div></div>`;
+
+            risks = calcRisks(healthData);
+            organKeys = Object.keys(risks);
+
+            // Color organs on body
+            Object.entries(risks).forEach(([key,r]) => {
+                const level = getLevel(r.score);
+                const el = document.getElementById(organMap[key]);
+                if(el) {
+                    el.classList.add('risk-'+level);
+                }
+            });
+
+            // Overall score
+            const avgRisk = Object.values(risks).reduce((s,r)=>s+r.score,0)/Object.values(risks).length;
+            const healthScore = Math.round(100-avgRisk);
+            document.getElementById('score-num').textContent = healthScore;
+            const circ = 2*Math.PI*52;
+            setTimeout(()=>{ document.getElementById('score-circle').style.strokeDashoffset = circ - (circ*healthScore/100); },300);
+            document.getElementById('score-circle').style.stroke = healthScore>=70?'var(--safe)':healthScore>=45?'var(--warn)':'var(--danger)';
+
+            // Risk cards
+            const tips = {
+                brain: ['Get 7-8 hours of quality sleep','Practice mindfulness/meditation','Reduce screen time before bed','Stay socially active'],
+                heart: ['150 min moderate exercise weekly','Follow low-sodium, high-fiber diet','Monitor blood pressure regularly','Manage stress effectively'],
+                lungs: ['Avoid smoking completely','Practice deep breathing exercises','Get outdoor cardio regularly','Maintain good air quality indoors'],
+                metabolic: ['Limit refined sugars and processed food','Stay hydrated with 2.5L water daily','Eat high-fiber, plant-based meals','Reduce alcohol consumption'],
+                skeletal: ['Strength training 2x per week','Maintain good posture','Stretch daily for flexibility','Get adequate calcium and Vitamin D']
+            };
+
+            const cardsHTML = Object.entries(risks).map(([key,r]) => {
+                const lv = getLevel(r.score);
+                const lvt = getLevelText(r.score);
+                return `<div class="risk-card" onclick="showOrgan('${key}')">
+                    <div class="risk-card-top">
+                        <div class="risk-organ"><i class="fa-solid ${r.icon}"></i> ${r.name}</div>
+                        <span class="risk-badge badge-${lv}">${lvt}</span>
+                    </div>
+                    <div class="risk-bar-bg"><div class="risk-bar-fill fill-${lv}" style="width:${r.score}%"></div></div>
+                    <div class="risk-details"><strong>${r.score}% risk score</strong>
+                        <ul>${tips[key].map(t=>`<li><i class="fa-solid fa-check-circle"></i> ${t}</li>`).join('')}</ul>
+                    </div>
+                </div>`;
+            }).join('');
+            document.getElementById('risk-cards').innerHTML = cardsHTML;
+
+            // Disease predictions
+            const diseases = [];
+            if(risks.heart.score>=30) diseases.push('Hypertension / Cardiovascular Disease');
+            if(risks.heart.score>=50) diseases.push('Coronary Artery Disease');
+            if(risks.metabolic.score>=30) diseases.push('Type 2 Diabetes Mellitus');
+            if(risks.metabolic.score>=50) diseases.push('Fatty Liver Disease');
+            if(risks.lungs.score>=40) diseases.push('Chronic Obstructive Pulmonary Disease');
+            if(risks.brain.score>=35) diseases.push('Chronic Insomnia / Cognitive Decline');
+            if(risks.skeletal.score>=35) diseases.push('Osteoporosis / Muscle Atrophy');
+            if(risks.metabolic.score>=40) diseases.push('Metabolic Syndrome');
+            if(diseases.length===0) diseases.push('No significant disease risks detected — great health profile!');
+            document.getElementById('diseases-list').innerHTML = diseases.map(d=>`<li>${d}</li>`).join('');
+        }
+
+        run();
+
+        const zoomTransforms = {
+            'brain': { scale: 2.2, x: '0%', y: '25%' },
+            'heart': { scale: 2.5, x: '-5%', y: '-10%' },
+            'lungs': { scale: 2.2, x: '0%', y: '-5%' },
+            'metabolic': { scale: 2.2, x: '0%', y: '-25%' },
+            'skeletal': { scale: 1.5, x: '0%', y: '-40%' }
+        };
+
+        const bodyContainer = document.querySelector('.body-container');
+
+        // 3D Parallax Effect
+        document.addEventListener('mousemove', (e) => {
+            if (document.body.classList.contains('zoomed')) return;
+            const x = (e.clientX / window.innerWidth - 0.5) * 20;
+            const y = (e.clientY / window.innerHeight - 0.5) * 20;
+            if (bodyContainer) {
+                bodyContainer.style.transform = `rotateY(${x}deg) rotateX(${-y}deg) scale(1)`;
+            }
+        });
+
+        function resetView() {
+            document.body.classList.remove('zoomed');
+            document.getElementById('reset-zoom-btn').style.display = 'none';
+            if (bodyContainer) bodyContainer.style.transform = 'scale(1) translate(0, 0)';
+            document.querySelectorAll('.organ-zone').forEach(z=>z.style.strokeWidth='');
+            
+            // Resume auto-cycle if desired, or just let it resume naturally
+            isAutoCycling = true;
+        }
+
+        let isAutoCycling = true;
+
+        // Highlight organ on click
+        function showOrgan(key, fromClick = true) {
+            if (fromClick) {
+                isAutoCycling = false; // Stop auto-cycle when user interacts
+                document.body.classList.add('zoomed');
+                document.getElementById('reset-zoom-btn').style.display = 'flex';
+            }
+
+            document.querySelectorAll('.organ-zone').forEach(z=>z.style.strokeWidth='');
+            const el = document.getElementById(organMap[key]);
+            if(el) {
+                el.style.strokeWidth='4';
+            }
+
+            if (fromClick || document.body.classList.contains('zoomed')) {
+                const t = zoomTransforms[key];
+                if(t && bodyContainer) {
+                    bodyContainer.style.transform = `scale(${t.scale}) translate(${t.x}, ${t.y})`;
+                }
+            }
+
+            // Scroll to corresponding risk card
+            if (fromClick) {
+                const cards = document.querySelectorAll('.risk-card');
+                const idx = Object.keys(risks).indexOf(key);
+                if(cards[idx]) cards[idx].scrollIntoView({behavior:'smooth',block:'center'});
+            }
+        }
+
+        // Auto-highlight sequence
+        let autoIdx = 0;
+        setInterval(()=>{
+            if(document.hidden || !isAutoCycling || document.body.classList.contains('zoomed') || organKeys.length === 0) return;
+            showOrgan(organKeys[autoIdx % organKeys.length], false);
+            autoIdx++;
+        }, 4000);
+    </script>
+</body>
+</html>

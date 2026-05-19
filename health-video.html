@@ -1,0 +1,1002 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predectiva — AI Preventive Health Video Generator</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --accent: #00e5ff;
+            --secondary: #9047ff;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass-bg: rgba(15, 20, 35, 0.9);
+            --border-glow: rgba(0, 229, 255, 0.3);
+            --danger: #f87171;
+            --success: #4ade80;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: radial-gradient(circle at center, #1a1b41 0%, var(--bg-color) 100%);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* ═══ AMBIENT BACKGROUND ═══ */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            pointer-events: none;
+            opacity: 0.15;
+            animation: orbFloat 15s ease-in-out infinite alternate;
+        }
+        .orb-1 { width: 600px; height: 600px; background: var(--accent); top: -10%; left: -10%; }
+        .orb-2 { width: 500px; height: 500px; background: var(--secondary); bottom: -10%; right: -10%; }
+
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, -50px) scale(1.1); }
+        }
+
+        /* ═══ HEADER ═══ */
+        header {
+            position: fixed;
+            top: 0; left: 0; width: 100%;
+            padding: 30px 50px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .controls {
+            display: flex;
+            gap: 15px;
+        }
+
+        .btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 12px 24px;
+            border-radius: 50px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-decoration: none;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+            border-color: var(--accent);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            border: none;
+            color: #000;
+        }
+
+        /* ═══ MAIN LAYOUT ═══ */
+        main {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            align-items: center;
+            padding: 0 100px;
+            gap: 50px;
+        }
+
+        /* ═══ VIDEO CONTAINER (LEFT SIDER - BODY) ═══ */
+        #viewport {
+            flex: 1.5;
+            height: 80vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            transition: transform 1.2s cubic-bezier(0.25, 1, 0.5, 1);
+            transform-origin: center;
+            overflow: hidden;
+            border-radius: 40px;
+        }
+
+        .body-container {
+            height: 100%;
+            position: relative;
+            filter: drop-shadow(0 0 40px rgba(0, 229, 255, 0.2));
+        }
+
+        .body-image {
+            height: 100%;
+            width: auto;
+            object-fit: contain;
+            filter: invert(1) hue-rotate(180deg) opacity(0.8);
+            mix-blend-mode: screen;
+        }
+
+        .body-illustration {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            z-index: 10;
+        }
+
+        .organ-hotspot {
+            fill: rgba(0, 229, 255, 0);
+            stroke: rgba(0, 229, 255, 0);
+            stroke-width: 2;
+            transition: all 0.6s ease;
+        }
+
+        .organ-hotspot.active {
+            fill: rgba(0, 229, 255, 0.2);
+            stroke: var(--accent);
+            stroke-width: 3;
+            filter: drop-shadow(0 0 15px var(--accent));
+        }
+
+        /* ═══ INFO PANEL (RIGHT SIDE) ═══ */
+        #player-panel {
+            flex: 1;
+            height: auto;
+            min-height: 70vh;
+            max-height: 85vh;
+            min-width: 450px;
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 32px;
+            padding: 45px 50px;
+            display: flex;
+            flex-direction: column;
+            box-shadow: 0 40px 100px rgba(0,0,0,0.5);
+            z-index: 150;
+            position: relative;
+            overflow-y: auto;
+            scrollbar-width: thin;
+            scrollbar-color: var(--accent) transparent;
+        }
+
+        #player-panel::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        #player-panel::-webkit-scrollbar-thumb {
+            background: var(--accent);
+            border-radius: 10px;
+        }
+
+        #player-panel::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .panel-glow {
+            position: absolute;
+            top: 0; right: 0;
+            width: 150px; height: 150px;
+            background: var(--accent);
+            filter: blur(100px);
+            opacity: 0.2;
+            pointer-events: none;
+        }
+
+        .video-status {
+            font-size: 0.75rem;
+            font-weight: 800;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .video-status::before {
+            content: '';
+            width: 8px; height: 8px;
+            background: var(--accent);
+            border-radius: 50%;
+            animation: pulse-dot 1.5s infinite;
+            flex-shrink: 0;
+        }
+
+        @keyframes pulse-dot {
+            0% { transform: scale(1); opacity: 1; }
+            100% { transform: scale(2.5); opacity: 0; }
+        }
+
+        h2#display-title {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            line-height: 1.2;
+        }
+
+        #display-text {
+            font-size: 1.1rem;
+            color: var(--text-dim);
+            line-height: 1.6;
+            margin-bottom: 30px;
+        }
+
+        .tip-list {
+            list-style: none;
+            margin-bottom: auto;
+        }
+
+        .tip-item {
+            opacity: 0;
+            transform: translateX(10px);
+            transition: all 0.5s ease;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: flex-start;
+            gap: 15px;
+            font-size: 1rem;
+            color: #fff;
+            font-weight: 500;
+        }
+
+        .tip-item.visible {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .tip-item i {
+            color: var(--accent);
+            margin-top: 4px;
+            font-size: 1.1rem;
+        }
+
+        /* ═══ PROGRESS BAR ═══ */
+        .video-progress {
+            width: 100%;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            margin-bottom: 25px;
+            overflow: hidden;
+        }
+
+        #progress-fill {
+            width: 0%;
+            height: 100%;
+            background: linear-gradient(90deg, var(--accent), var(--secondary));
+            transition: width 0.3s linear;
+        }
+
+        /* ═══ PLAYER CONTROLS ═══ */
+        .player-actions {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .playback-btns {
+            display: flex;
+            gap: 15px;
+        }
+
+        .lang-select {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #fff;
+            padding: 8px 15px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            cursor: pointer;
+            outline: none;
+            transition: border-color 0.3s;
+        }
+
+        .lang-select:focus { border-color: var(--accent); }
+
+        /* ═══ OVERLAY LOADER ═══ */
+        #video-loader {
+            position: fixed;
+            inset: 0;
+            background: var(--bg-color);
+            z-index: 2000;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.8s ease;
+        }
+
+        .loader-spinner {
+            width: 80px; height: 80px;
+            border: 4px solid rgba(0, 229, 255, 0.1);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin { 100% { transform: rotate(360deg); } }
+
+        .loader-text {
+            font-size: 1.2rem;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--accent);
+            text-transform: uppercase;
+        }
+
+        /* ═══ FOOD RECOMMENDATION PANEL ═══ */
+        #food-panel {
+            position: fixed;
+            right: 0;
+            top: 0;
+            width: 350px;
+            height: 100vh;
+            background: rgba(10, 15, 25, 0.95);
+            backdrop-filter: blur(40px);
+            border-left: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 100px 30px 40px;
+            display: flex;
+            flex-direction: column;
+            transform: translateX(100%);
+            transition: transform 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+            z-index: 140;
+        }
+
+        #food-panel.active {
+            transform: translateX(0);
+        }
+
+        .food-header {
+            margin-bottom: 25px;
+        }
+
+        .food-header h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--accent);
+            line-height: 1.3;
+        }
+
+        .food-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            overflow-y: auto;
+            padding-bottom: 20px;
+        }
+
+        .food-card {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            overflow: hidden;
+            transition: all 0.4s;
+            cursor: default;
+        }
+
+        .food-card:hover {
+            background: rgba(255, 255, 255, 0.06);
+            border-color: var(--accent);
+            transform: translateY(-5px);
+        }
+
+        .food-img-container {
+            width: 100%;
+            height: 140px;
+            overflow: hidden;
+            background: #151a25;
+        }
+
+        .food-img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transition: transform 0.6s;
+        }
+
+        .food-card:hover .food-img {
+            transform: scale(1.1);
+        }
+
+        .food-info {
+            padding: 15px;
+        }
+
+        .food-name {
+            font-weight: 700;
+            font-size: 1rem;
+            margin-bottom: 4px;
+            color: #fff;
+        }
+
+        .food-benefit {
+            font-size: 0.8rem;
+            color: var(--text-dim);
+            line-height: 1.4;
+        }
+
+        /* Adjust main layout to accommodate food panel */
+        main {
+            display: flex;
+            width: 100vw;
+            height: 100vh;
+            align-items: center;
+            padding: 0 80px;
+            gap: 80px;
+            transition: padding-right 0.8s;
+        }
+
+        body.food-active main {
+            padding-right: 480px;
+        }
+
+        /* Override viewport flex when food panel is active */
+        body.food-active #viewport {
+            flex: 1.1;
+        }
+
+        @media (max-width: 1400px) {
+            #food-panel {
+                width: 300px;
+            }
+            body.food-active main {
+                padding-right: 320px;
+            }
+        }
+
+        @media (max-width: 1100px) {
+            main { flex-direction: column; padding: 100px 40px; }
+            #viewport { height: 40vh; transform-origin: top; }
+            #player-panel { height: auto; width: 100%; }
+            #food-panel { 
+                position: static; 
+                width: 100%; 
+                height: auto; 
+                transform: none; 
+                border-left: none;
+                border-top: 1px solid rgba(255,255,255,0.1);
+                margin-top: 30px;
+                padding: 40px 0;
+                display: none;
+            }
+            #food-panel.active { display: block; }
+            body.food-active main { padding-right: 40px; }
+        }
+    </style>
+</head>
+<body>
+
+    <header>
+        <div class="logo">
+            <i class="fa-solid fa-play-circle"></i> MEDAI PRO
+        </div>
+        <div class="controls">
+            <a href="analysis.html" class="btn">
+                <i class="fa-solid fa-arrow-left"></i> Back to Report
+            </a>
+            <button class="btn btn-primary" onclick="startVideo()">
+                <i class="fa-solid fa-repeat"></i> Regenerate
+            </button>
+        </div>
+    </header>
+
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <!-- INITIAL LOADER -->
+    <div id="video-loader">
+        <div class="loader-spinner"></div>
+        <p class="loader-text">AI Generating Personalized Health Video...</p>
+    </div>
+
+    <main>
+        <!-- VIDEO VISUALIZATION (BODY) -->
+        <div id="viewport">
+            <div class="body-container">
+                <img src="assets/realistic_human_body.png" alt="Human Anatomy" class="body-image">
+                <svg class="body-illustration" viewBox="0 0 1024 1024" preserveAspectRatio="xMidYMid meet">
+                    <!-- Brain -->
+                    <g id="organ-brain" class="organ-hotspot">
+                        <ellipse cx="512" cy="110" rx="75" ry="90" />
+                    </g>
+                    <!-- Heart -->
+                    <g id="organ-heart" class="organ-hotspot">
+                        <ellipse cx="530" cy="380" rx="40" ry="50" />
+                    </g>
+                    <!-- Lungs -->
+                    <g id="organ-lungs" class="organ-hotspot">
+                        <path d="M 430,320 Q 400,380 430,480 L 480,480 Q 490,380 470,320 Z" />
+                        <path d="M 594,320 Q 624,380 594,480 L 544,480 Q 534,380 554,320 Z" />
+                    </g>
+                    <!-- Digestive/Metabolic (Liver/Gut area) -->
+                    <g id="organ-metabolic" class="organ-hotspot">
+                        <ellipse cx="512" cy="550" rx="100" ry="80" />
+                    </g>
+                    <!-- Bone/Muscle -->
+                    <g id="organ-skeletal" class="organ-hotspot">
+                        <path d="M500,750 L500,980 M524,750 L524,980" stroke="white" stroke-width="40" opacity="0.1" />
+                    </g>
+                </svg>
+            </div>
+        </div>
+
+        <!-- INFO PANEL -->
+        <div id="player-panel">
+            <div class="logo">Predectiva</div>
+            <div class="panel-glow"></div>
+            <div class="video-status" id="playback-status">Analyzing Profiles...</div>
+            <h2 id="display-title">Preparing Your Guide</h2>
+            <p id="display-text">Gathering lifestyle data points to curate your preventive measures.</p>
+
+            <ul class="tip-list" id="tip-list">
+                <!-- Tips will be injected here -->
+            </ul>
+
+            <div class="video-progress">
+                <div id="progress-fill"></div>
+            </div>
+
+            <div class="player-actions">
+                <div class="playback-btns">
+                    <button class="btn" onclick="togglePlayback()" id="play-pause-btn">
+                        <i class="fa-solid fa-pause"></i>
+                    </button>
+                    <button class="btn" onclick="startVideo()">
+                        <i class="fa-solid fa-rotate-right"></i> Replay
+                    </button>
+                </div>
+                
+                <select class="lang-select" id="lang-select" onchange="changeLanguage()">
+                    <option value="en">English (Voice)</option>
+                    <option value="hi">Hindi (Voice)</option>
+                    <option value="hinglish">Hinglish (Voice)</option>
+                    <option value="kn">Kannada (Voice)</option>
+                </select>
+            </div>
+
+            <p style="font-size: 0.65rem; color: rgba(255,255,255,0.3); margin-top: 20px; font-style: italic;">
+                * This video provides general preventive health guidance based on your lifestyle information and does not replace professional medical advice.
+            </p>
+        </div>
+
+        <!-- FOOD RECOMMENDATION PANEL -->
+        <div id="food-panel">
+            <div class="food-header">
+                <h3>Foods That Support<br><span id="food-organ-name">Your Body</span></h3>
+            </div>
+            <div class="food-grid" id="food-grid">
+                <!-- Food cards injected here -->
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ── DATA CONFIGURATION ──
+        const scripts = [
+            {
+                id: 'intro',
+                title: 'Welcome to Predectiva',
+                text: {
+                    en: 'This personalized health video highlights preventive actions that can help maintain the health of your major organs.',
+                    hi: 'यह व्यक्तिगत स्वास्थ्य वीडियो उन बचाव युक्तियों पर केंद्रित है जो आपके प्रमुख अंगों को स्वस्थ रखने में मदद कर सकती हैं।',
+                    hinglish: "Welcome to Predectiva. Let's analyze your health status for proactive prevention.",
+                    kn: 'ಈ ವೈಯಕ್ತಿಕಗೊಳಿಸಿದ ಆರೋಗ್ಯ ವೀಡಿಯೊವು ನಿಮ್ಮ ಪ್ರಮುಖ ಅಂಗಗಳ ಆರೋಗ್ಯವನ್ನು ಕಾಪಾಡಿಕೊಳ್ಳಲು ಸಹಾಯ ಮಾಡುವ ತಡೆಗಟ್ಟುವ ಕ್ರಮಗಳನ್ನು ಎತ್ತಿ ತೋರಿಸುತ್ತದೆ.'
+                },
+                organ: null,
+                zoom: { scale: 1, x: 0, y: 0 },
+                tips: []
+            },
+            {
+                id: 'brain',
+                title: 'Brain & Mental Wellness',
+                text: {
+                    en: 'For your brain health, focus on sleep and mental rejuvenation. Chronic stress and low sleep can impact cognitive potential.',
+                    hi: 'मस्तिष्क स्वास्थ्य के लिए नींद और मानसिक शांति पर ध्यान दें। पुरानी थकान और कम नींद आपकी सोचने की क्षमता पर असर डाल सकती है।',
+                    hinglish: 'Brain health ke liye, focus karein sleep aur mental peace par. Chronic stress aur kam sleep se dimagi takat par asar pad sakta hai.',
+                    kn: 'ನಿಮ್ಮ ಮೆದುಳಿನ ಆರೋಗ್ಯಕ್ಕಾಗಿ, ನಿದ್ರೆ ಮತ್ತು ಮಾನಸಿಕ ಪುನರುಜ್ಜೀವನದ ಮೇಲೆ ಗಮನ ಹರಿಸಿ. ದೀರ್ಘಕಾಲದ ಒತ್ತಡ ಮತ್ತು ಕಡಿಮೆ ನಿದ್ರೆ ಅರಿವಿನ ಸಾಮರ್ಥ್ಯದ ಮೇಲೆ ಪರಿಣಾಮ ಬೀರಬಹುದು.'
+                },
+                organ: 'brain',
+                zoom: { scale: 3, x: '0%', y: '35%' },
+                tips: [
+                    'Maintain 7–8 hours of consistent sleep',
+                    'Reduce screen exposure 1 hour before bedtime',
+                    'Practice daily mindfulness or meditation'
+                ],
+                foods: [
+                    { name: 'Walnuts', benefit: 'High in Omega-3 for brain function', img: 'assets/walnut_brain_food_1773454492543.png' },
+                    { name: 'Almonds', benefit: 'Boosts vitamin E and cognitive performance', img: 'assets/almonds_brain_food_1773454507943.png' },
+                    { name: 'Blueberries', benefit: 'Antioxidants protect brain cells from damage', img: 'assets/blueberries_brain_food_1773454524583.png' },
+                    { name: 'Fatty fish', benefit: 'High in DHA for structural brain health', img: 'assets/salmon_brain_food_1773454543024.png' },
+                    { name: 'Dark chocolate', benefit: 'Improves blood flow to the brain', img: 'assets/dark_chocolate_brain_food_1773454559587.png' }
+                ]
+            },
+            {
+                id: 'heart',
+                title: 'Cardiovascular Health',
+                text: {
+                    en: 'Your heart is the engine of your body. Regular movement and weight management protect against arterial strain.',
+                    hi: 'आपका हृदय आपके शरीर का इंजन है। नियमित व्यायाम और वजन नियंत्रण नसों के खिंचाव को रोकते हैं।',
+                    hinglish: 'Heart aapki body ka engine hai. Regular movement aur weight management aapke arterial tension ko kam karta hai.',
+                    kn: 'ನಿಮ್ಮ ಹೃದಯವು ನಿಮ್ಮ ದೇಹದ ಎಂಜಿನ್ ಆಗಿದೆ. ನಿಯಮಿತ ಚಲನೆ ಮತ್ತು ತೂಕ ನಿರ್ವಹಣೆ ಅಪಧಮನಿಯ ಒತ್ತಡದಿಂದ ರಕ್ಷಿಸುತ್ತದೆ.'
+                },
+                organ: 'heart',
+                zoom: { scale: 3.2, x: '-5%', y: '12%' },
+                tips: [
+                    'Engage in 150 mins of moderate activity weekly',
+                    'Follow a fiber-rich, low-sodium nutrition plan',
+                    'Monitor your resting heart rate regularly'
+                ],
+                foods: [
+                    { name: 'Oats', benefit: 'Supports healthy cholesterol levels', img: 'assets/oats_heart_food_1773454578987.png' },
+                    { name: 'Avocado', benefit: 'Contains heart-healthy fats', img: 'assets/avocado_heart_food_1773454594722.png' },
+                    { name: 'Olive Oil', benefit: 'Rich in antioxidants for heart health', img: 'assets/olive_oil_heart_food_1773454612562.png' },
+                    { name: 'Spinach', benefit: 'High in nitrates to help lower blood pressure', img: 'assets/spinach_heart_food_1773454629144.png' },
+                    { name: 'Tomatoes', benefit: 'Lycopene protects heart cells from stress', img: 'assets/tomatoes_heart_food_1773454643700.png' }
+                ]
+            },
+            {
+                id: 'lungs',
+                title: 'Respiratory Wellness',
+                text: {
+                    en: 'Healthy lungs depend on clean air and active breathing. Respiratory capacity defines your overall vitality.',
+                    hi: 'स्वस्थ फेफड़े साफ हवा और गहरी सांसों पर निर्भर करते हैं। आपकी सांस लेने की क्षमता ही आपकी जीवन शक्ति है।',
+                    hinglish: 'Healthy lungs saaf hawa aur active breathing par depend karte hain. Aapki breathing capacity se overall vitality bani rehti hai.',
+                    kn: 'ಆರೋಗ್ಯಕರ ಶ್ವಾಸಕೋಶಗಳು ಶುದ್ಧ ಗಾಳಿ ಮತ್ತು ಸಕ್ರಿಯ ಉಸಿರಾಟದ ಮೇಲೆ ಅವಲಂಬಿತವಾಗಿವೆ.'
+                },
+                organ: 'lungs',
+                zoom: { scale: 2.8, x: '-3%', y: '13%' },
+                tips: [
+                    'Avoid smoking and polluted environments',
+                    'Practice deep diaphragmatic breathing daily',
+                    'Prioritize outdoor cardio exercises'
+                ],
+                foods: [
+                    { name: 'Apples', benefit: 'Rich in flavonoids for lung protection', img: 'assets/apples_lung_food_1773454664951.png' },
+                    { name: 'Garlic', benefit: 'Anti-inflammatory and antimicrobial for lungs', img: 'assets/garlic_lung_food_1773454680161.png' },
+                    { name: 'Ginger', benefit: 'Helps detoxify the respiratory tract', img: 'assets/ginger_lung_food_1773454699916.png' },
+                    { name: 'Turmeric', benefit: 'Curcumin helps reduce lung inflammation', img: 'assets/turmeric_lung_food_1773454719631.png' }
+                ]
+            },
+            {
+                id: 'metabolic',
+                title: 'Metabolic & Digestive Health',
+                text: {
+                    en: 'The liver and digestive system process everything you consume. High sugars and toxins increase metabolic stress.',
+                    hi: 'लिवर और पाचन तंत्र आपके द्वारा खाए जाने वाले हर पदार्थ को संसाधित करते हैं। चीनी और विषाक्त पदार्थ चयापचय तनाव बढ़ाते हैं।',
+                    hinglish: 'Liver aur digestive system sab kuch process karte hain jo aap consume karte hain. Jyada sugar aur toxins metabolic stress badhate hain.',
+                    kn: 'ಯಕೃತ್ತು ಮತ್ತು ಜೀರ್ಣಾಂಗ ವ್ಯವಸ್ಥೆಯು ನೀವು ಸೇವಿಸುವ ಪ್ರತಿಯೊಂದನ್ನೂ ಸಂಸ್ಕರಿಸುತ್ತದೆ.'
+                },
+                organ: 'metabolic',
+                zoom: { scale: 2.5, x: '0%', y: '-8%' },
+                tips: [
+                    'Limit refined sugars and processed foods',
+                    'Transition toward a high-fiber, plant-based diet',
+                    'Stay hydrated with 2.5L of water daily'
+                ],
+                foods: [
+                    { name: 'Green Tea', benefit: 'Antioxidants support liver detoxification', img: 'assets/green_tea_liver_food_1773454743581.png' },
+                    { name: 'Beetroot', benefit: 'Helps activate liver enzymes and flow', img: 'assets/beetroot_liver_food_1773454763133.png' },
+                    { name: 'Leafy Greens', benefit: 'Neutralize heavy metals and protect liver', img: 'assets/leafy_greens_liver_food_1773454782264.png' },
+                    { name: 'Yogurt', benefit: 'Probiotics for healthy gut microbiome', img: 'https://loremflickr.com/800/600/yogurt' },
+                    { name: 'Bananas', benefit: 'Fiber and potassium for digestive regularity', img: 'https://loremflickr.com/800/600/bananas' }
+                ]
+            },
+            {
+                id: 'skeletal',
+                title: 'Skeletal & Muscle Strength',
+                text: {
+                    en: 'Mobility is freedom. Support your posture and bones to stay active for decades to come.',
+                    hi: 'गतिशीलता ही स्वतंत्रता है। आने वाले दशकों तक सक्रिय रहने के लिए अपनी मुद्रा और हड्डियों का समर्थन करें।',
+                    hinglish: 'Mobility hi freedom hai. Apne posture aur bones ka dhayan rakhein aage sadiyon tak active rehne ke liye.',
+                    kn: 'ಚಲನಶೀಲತೆಯೇ ಸ್ವಾತಂತ್ರ್ಯ. ಮುಂಬರುವ ದಶಕಗಳವರೆಗೆ ಸಕ್ರಿಯವಾಗಿರಲು ನಿಮ್ಮ ಭಂಗಿ ಮತ್ತು ಮೂಳೆಗಳನ್ನು ಬೆಂಬಲಿಸಿ.'
+                },
+                organ: 'skeletal',
+                zoom: { scale: 2, x: '0%', y: '-25%' },
+                tips: [
+                    'Include strength training 2 times per week',
+                    'Maintain correct desk posture and ergonomics',
+                    'Stretch daily to improve muscle flexibility'
+                ],
+                foods: [
+                    { name: 'Milk', benefit: 'Calcium and Vitamin D for bone density', img: 'https://loremflickr.com/800/600/milk' },
+                    { name: 'Eggs', benefit: 'High quality protein for muscle repair', img: 'https://loremflickr.com/800/600/eggs' },
+                    { name: 'Beans', benefit: 'Iron and protein for muscle energy', img: 'https://loremflickr.com/800/600/beans' },
+                    { name: 'Mixed Nuts', benefit: 'Magnesium for healthy muscle function', img: 'https://loremflickr.com/800/600/nuts' }
+                ]
+            },
+            {
+                id: 'summary',
+                title: 'Your Preventive Path',
+                text: {
+                    en: 'Small changes today define your health tomorrow. Focus on your top priorities to build long-term longevity.',
+                    hi: 'आज के छोटे बदलाव आपके कल के स्वास्थ्य को परिभाषित करते हैं। लंबी उम्र के लिए अपनी प्राथमिकताओं पर ध्यान दें।',
+                    hinglish: 'Aaj ke chhote badlav aapki kal ki health define karte hain. Apne main priorities par focus karein for long-term health.',
+                    kn: 'ಇಂದಿನ ಸಣ್ಣ ಬದಲಾವಣೆಗಳು ನಿಮ್ಮ ನಾಳೆಯ ಆರೋಗ್ಯವನ್ನು ವ್ಯಾಖ್ಯಾನಿಸುತ್ತವೆ.'
+                },
+                organ: null,
+                zoom: { scale: 1, x: 0, y: 0 },
+                tips: ['Consistency is key to health', 'Listen to your bodys signals', 'Book a check-up annually']
+            }
+        ];
+
+        // ── PLAYER STATE ──
+        let currentIdx = 0;
+        let isPlaying = false;
+        let currentLang = 'en';
+        let synth = window.speechSynthesis;
+        let utterance = null;
+        let healthData = {};
+
+        // ── INITIALIZATION ──
+        window.onload = () => {
+            healthData = JSON.parse(localStorage.getItem('healthData')) || {};
+            
+            // Analyze and reorder scripts based on priorities
+            prioritizeScripts();
+
+            setTimeout(() => {
+                document.getElementById('video-loader').style.opacity = '0';
+                setTimeout(() => {
+                    document.getElementById('video-loader').style.display = 'none';
+                    startVideo();
+                }, 800);
+            }, 2500);
+        };
+
+        function prioritizeScripts() {
+            // Mapping risks to sections
+            const priorities = [];
+            
+            // BMI -> Heart & Metabolic
+            const weight = parseFloat(healthData.weight);
+            const height = parseFloat(healthData.height) / 100;
+            const bmi = weight / (height * height);
+            if (bmi >= 25) {
+                priorities.push('heart');
+                priorities.push('metabolic');
+            }
+
+            // Sleep -> Brain
+            if (parseFloat(healthData.sleep) < 7) {
+                priorities.push('brain');
+            }
+
+            // Smoking -> Lungs
+            if (healthData.smoking === 'yes') {
+                priorities.push('lungs');
+            }
+
+            // Exercise -> Skeletal
+            if (healthData.exercise === 'none' || healthData.exercise === 'rarely') {
+                priorities.push('skeletal');
+            }
+
+            // Simple reordering: Move priority items after Intro
+            const intro = scripts.shift();
+            const summary = scripts.pop();
+            
+            scripts.sort((a, b) => {
+                const aPri = priorities.includes(a.id) ? 1 : 0;
+                const bPri = priorities.includes(b.id) ? 1 : 0;
+                return bPri - aPri;
+            });
+
+            scripts.unshift(intro);
+            scripts.push(summary);
+        }
+
+        // ── PLAYBACK LOGIC ──
+        function startVideo() {
+            stopVideo();
+            currentIdx = 0;
+            isPlaying = true;
+            updateUIState();
+            playCurrentSection();
+        }
+
+        function stopVideo() {
+            isPlaying = false;
+            if (synth.speaking) synth.cancel();
+            updateUIState();
+        }
+
+        function togglePlayback() {
+            if (isPlaying) {
+                synth.pause();
+                isPlaying = false;
+            } else {
+                if (synth.paused) {
+                    synth.resume();
+                } else {
+                    playCurrentSection();
+                }
+                isPlaying = true;
+            }
+            updateUIState();
+        }
+
+        function updateUIState() {
+            const btn = document.getElementById('play-pause-btn');
+            btn.innerHTML = isPlaying ? '<i class="fa-solid fa-pause"></i>' : '<i class="fa-solid fa-play"></i>';
+        }
+
+        function playCurrentSection() {
+            if (currentIdx >= scripts.length) {
+                document.getElementById('playback-status').innerText = 'Video Complete';
+                isPlaying = false;
+                updateUIState();
+                return;
+            }
+
+            const section = scripts[currentIdx];
+            
+            // Update Visuals
+            applyZoom(section.zoom);
+            highlightOrgan(section.organ);
+            
+            document.getElementById('display-title').innerText = section.title;
+            document.getElementById('display-text').innerText = section.text[currentLang];
+            document.getElementById('playback-status').innerText = `Playing: ${section.title}`;
+            
+            renderTips(section.tips);
+            updateProgress();
+
+            // Toggle Food Panel
+            if (section.organ) {
+                showFoodPanel(section.organ, section.foods);
+            } else {
+                hideFoodPanel();
+            }
+
+            // Speak
+            speak(section.text[currentLang], () => {
+                if (isPlaying) {
+                    setTimeout(() => {
+                        currentIdx++;
+                        playCurrentSection();
+                    }, 1000);
+                }
+            });
+        }
+
+        // ── FOOD PANEL LOGIC ──
+        function showFoodPanel(organId, foods) {
+            const panel = document.getElementById('food-panel');
+            const grid = document.getElementById('food-grid');
+            const organName = document.getElementById('food-organ-name');
+            
+            organName.innerText = scripts[currentIdx].title.split('&')[0].trim();
+            grid.innerHTML = '';
+            
+            foods.forEach((food, i) => {
+                const card = document.createElement('div');
+                card.className = 'food-card';
+                card.style.opacity = '0';
+                card.style.transform = 'translateY(20px)';
+                
+                card.innerHTML = `
+                    <div class="food-img-container">
+                        <img src="${food.img}" class="food-img" loading="lazy" onerror="this.src='https://loremflickr.com/800/600/healthy,food?lock='+Math.random()">
+                    </div>
+                    <div class="food-info">
+                        <div class="food-name">${food.name}</div>
+                        <div class="food-benefit">${food.benefit}</div>
+                    </div>
+                `;
+                
+                grid.appendChild(card);
+                
+                // Entrance animation
+                setTimeout(() => {
+                    card.style.transition = 'all 0.6s ease';
+                    card.style.opacity = '1';
+                    card.style.transform = 'translateY(0)';
+                }, 100 * i);
+            });
+
+            document.body.classList.add('food-active');
+            panel.classList.add('active');
+        }
+
+        function hideFoodPanel() {
+            const panel = document.getElementById('food-panel');
+            document.body.classList.remove('food-active');
+            panel.classList.remove('active');
+        }
+
+        function speak(text, onEnd) {
+            if (utterance) synth.cancel();
+            
+            utterance = new SpeechSynthesisUtterance(text);
+            
+            // Voice selection logic
+            const voices = synth.getVoices();
+            let selectedVoice = null;
+
+            if (currentLang === 'en') {
+                selectedVoice = voices.find(v => v.lang.includes('en') && v.name.includes('Google'));
+            } else if (currentLang === 'hi' || currentLang === 'hinglish') {
+                selectedVoice = voices.find(v => v.lang.includes('hi'));
+            } else if (currentLang === 'kn') {
+                selectedVoice = voices.find(v => v.lang.includes('kn'));
+            }
+
+            if (selectedVoice) utterance.voice = selectedVoice;
+            utterance.rate = 0.95; // Calm pace
+            utterance.pitch = 1.0;
+            
+            utterance.onend = onEnd;
+            synth.speak(utterance);
+        }
+
+        function applyZoom(zoom) {
+            const vp = document.getElementById('viewport');
+            vp.style.transform = `scale(${zoom.scale}) translate(${zoom.x}, ${zoom.y})`;
+        }
+
+        function highlightOrgan(organId) {
+            document.querySelectorAll('.organ-hotspot').forEach(o => o.classList.remove('active'));
+            if (organId) {
+                document.getElementById('organ-' + organId).classList.add('active');
+            }
+        }
+
+        function renderTips(tips) {
+            const list = document.getElementById('tip-list');
+            list.innerHTML = '';
+            
+            tips.forEach((tip, i) => {
+                const li = document.createElement('li');
+                li.className = 'tip-item';
+                li.innerHTML = `<i class="fa-solid fa-check-circle"></i> ${tip}`;
+                list.appendChild(li);
+                
+                setTimeout(() => li.classList.add('visible'), 500 + (i * 300));
+            });
+        }
+
+        function updateProgress() {
+            const pct = ((currentIdx + 1) / scripts.length) * 100;
+            document.getElementById('progress-fill').style.width = pct + '%';
+        }
+
+        function changeLanguage() {
+            currentLang = document.getElementById('lang-select').value;
+            startVideo(); // Restart in new language
+        }
+
+        // Wait for voices to load (some browsers)
+        if (speechSynthesis.onvoiceschanged !== undefined) {
+            speechSynthesis.onvoiceschanged = () => synth.getVoices();
+        }
+    </script>
+</body>
+</html>

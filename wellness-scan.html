@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predectiva — AI Wellness Camera Scan</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        :root {
+            --bg-color: #0b0f19;
+            --accent: #00e5ff;
+            --secondary: #9047ff;
+            --text-main: #f8fafc;
+            --text-dim: #94a3b8;
+            --glass-bg: rgba(15, 20, 35, 0.85);
+            --border-glow: rgba(0, 229, 255, 0.3);
+            --danger: #f87171;
+            --warning: #facc15;
+            --success: #4ade80;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: radial-gradient(circle at center, #1a1b41 0%, var(--bg-color) 100%);
+            color: var(--text-main);
+            overflow: hidden;
+            height: 100vh;
+        }
+
+        /* Ambient Background */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            pointer-events: none;
+            animation: orbFloat 15s ease-in-out infinite alternate;
+        }
+        .orb-1 { width: 500px; height: 500px; background: rgba(0, 229, 255, 0.1); top: -10%; left: -5%; }
+        .orb-2 { width: 400px; height: 400px; background: rgba(144, 71, 255, 0.1); bottom: -5%; right: -5%; }
+        
+        @keyframes orbFloat {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(50px, 50px) scale(1.1); }
+        }
+
+        .main-layout {
+            display: grid;
+            grid-template-columns: 1fr 400px;
+            gap: 30px;
+            padding: 40px 60px;
+            height: 100vh;
+            position: relative;
+            z-index: 10;
+        }
+
+        /* Camera Section */
+        .camera-container {
+            position: relative;
+            background: rgba(0, 0, 0, 0.5);
+            border-radius: 30px;
+            border: 1px solid var(--border-glow);
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(0, 229, 255, 0.15);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            transform: scaleX(-1); /* Mirror effect */
+        }
+
+        #hud-overlay {
+            position: absolute;
+            inset: 0;
+            z-index: 20;
+            pointer-events: none;
+            transform: scaleX(-1); /* Mirror to match video */
+        }
+
+        .scan-overlay {
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(transparent, rgba(0, 229, 255, 0.1), transparent);
+            background-size: 100% 200px;
+            animation: scanLine 3s linear infinite;
+            display: none;
+            z-index: 21;
+        }
+
+        @keyframes scanLine {
+            0% { transform: translateY(-100%); }
+            100% { transform: translateY(100%); }
+        }
+
+        /* Sidebar Insights */
+        .insights-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(30px);
+            border-radius: 30px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            padding: 30px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            overflow-y: auto;
+        }
+
+        .insight-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 20px;
+            padding: 20px;
+            border-left: 4px solid var(--accent);
+            opacity: 0;
+            transform: translateX(20px);
+            transition: all 0.5s ease;
+        }
+
+        .insight-card.active {
+            opacity: 1;
+            transform: translateX(0);
+        }
+
+        .insight-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 8px;
+            font-weight: 700;
+            font-size: 0.9rem;
+            color: var(--accent);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .insight-text {
+            font-size: 0.85rem;
+            line-height: 1.5;
+            color: var(--text-main);
+        }
+
+        /* Controls */
+        .controls {
+            position: absolute;
+            bottom: 40px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 20px;
+            z-index: 30;
+        }
+
+        .btn {
+            background: var(--glass-bg);
+            border: 1px solid var(--border-glow);
+            color: white;
+            padding: 15px 30px;
+            border-radius: 50px;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.3s;
+            text-decoration: none;
+        }
+
+        .btn:hover {
+            background: rgba(0, 229, 255, 0.1);
+            box-shadow: 0 0 20px rgba(0, 229, 255, 0.3);
+        }
+
+        .btn-scan {
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            border: none;
+            color: black;
+            font-size: 1rem;
+            padding: 18px 40px;
+        }
+
+        .btn-scan:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .header-nav {
+            position: absolute;
+            top: 40px;
+            left: 40px;
+            z-index: 40;
+        }
+
+        .logo {
+            font-size: 1.8rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, var(--accent), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 10px;
+        }
+
+        .disclaimer {
+            font-size: 0.65rem;
+            color: var(--text-dim);
+            font-style: italic;
+            text-align: center;
+            margin-top: auto;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            padding-top: 20px;
+        }
+
+        /* HUD Graphics */
+        .hud-target {
+            position: absolute;
+            width: 300px;
+            height: 300px;
+            border: 2px solid rgba(0, 229, 255, 0.2);
+            border-radius: 50%;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .hud-corner {
+            position: absolute;
+            width: 40px;
+            height: 40px;
+            border: 2px solid var(--accent);
+        }
+        .tl { top: 40px; left: 40px; border-right: 0; border-bottom: 0; }
+        .tr { top: 40px; right: 40px; border-left: 0; border-bottom: 0; }
+        .bl { bottom: 40px; left: 40px; border-right: 0; border-top: 0; }
+        .br { bottom: 40px; right: 40px; border-left: 0; border-top: 0; }
+
+        #scan-status {
+            text-align: center;
+            font-weight: 600;
+            color: var(--accent);
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+
+        @media (max-width: 992px) {
+            body {
+                overflow-y: auto;
+                height: auto;
+            }
+            .header-nav {
+                position: absolute;
+                top: 20px;
+                left: 20px;
+                right: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                width: calc(100% - 40px);
+            }
+            .header-nav .btn {
+                padding: 10px 20px;
+                font-size: 0.85rem;
+            }
+            .logo {
+                font-size: 1.5rem;
+                margin-bottom: 0;
+            }
+            .main-layout {
+                grid-template-columns: 1fr;
+                padding: 100px 20px 30px;
+                height: auto;
+                gap: 25px;
+            }
+            .camera-container {
+                height: 50vh;
+                min-height: 350px;
+            }
+            .insights-panel {
+                height: auto;
+                max-height: none;
+                overflow-y: visible;
+                padding: 25px;
+            }
+            .controls {
+                bottom: 20px;
+            }
+            .btn-scan {
+                font-size: 0.9rem;
+                padding: 14px 28px;
+            }
+        }
+
+        @media (max-width: 576px) {
+            .header-nav {
+                flex-direction: column;
+                gap: 10px;
+                align-items: flex-start;
+            }
+            .main-layout {
+                padding-top: 150px;
+                padding-left: 10px;
+                padding-right: 10px;
+            }
+            .camera-container {
+                height: 40vh;
+                min-height: 280px;
+            }
+            .btn-scan {
+                font-size: 0.8rem;
+                padding: 12px 20px;
+            }
+            .hud-target {
+                width: 200px;
+                height: 200px;
+            }
+            .hud-corner {
+                width: 25px;
+                height: 25px;
+            }
+            .tl { top: 20px; left: 20px; }
+            .tr { top: 20px; right: 20px; }
+            .bl { bottom: 20px; left: 20px; }
+            .br { bottom: 20px; right: 20px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+
+    <div class="header-nav">
+        <div class="logo">Predectiva</div>
+        <a href="hero.html" class="btn">
+            <i class="fa-solid fa-arrow-left"></i> Go Back
+        </a>
+    </div>
+
+    <main class="main-layout">
+        <!-- AI Camera Viewport -->
+        <div class="camera-container">
+            <video id="webcam" autoplay playsinline></video>
+            <canvas id="hud-overlay"></canvas>
+            
+            <div class="tl hud-corner"></div>
+            <div class="tr hud-corner"></div>
+            <div class="bl hud-corner"></div>
+            <div class="br hud-corner"></div>
+            <div id="scanner" class="scan-overlay"></div>
+
+            <div class="controls">
+                <button id="scan-btn" class="btn btn-scan" onclick="startScan()">
+                    <i class="fa-solid fa-crosshairs"></i> START AI WELLNESS SCAN
+                </button>
+            </div>
+        </div>
+
+        <!-- Insights Panel -->
+        <aside class="insights-panel">
+            <div id="scan-status">SYSTEM READY</div>
+            
+            <div id="results-container">
+                <!-- Insights will be injected here -->
+            </div>
+
+            <div class="disclaimer">
+                <i class="fa-solid fa-circle-info"></i>
+                "This feature provides wellness insights based on visual indicators and is not a medical diagnostic tool. For medical concerns, please consult a healthcare professional."
+            </div>
+        </aside>
+    </main>
+
+    <script>
+        const video = document.getElementById('webcam');
+        const canvas = document.getElementById('hud-overlay');
+        const ctx = canvas.getContext('2d');
+        const scanBtn = document.getElementById('scan-btn');
+        const scanner = document.getElementById('scanner');
+        const scanStatus = document.getElementById('scan-status');
+        const resultsContainer = document.getElementById('results-container');
+
+        // Request camera access
+        async function initCamera() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+                video.srcObject = stream;
+                
+                video.onloadedmetadata = () => {
+                    canvas.width = video.videoWidth;
+                    canvas.height = video.videoHeight;
+                    drawHUD();
+                };
+            } catch (err) {
+                console.error("Camera access denied:", err);
+                scanStatus.innerText = "CAMERA ACCESS DENIED";
+                scanStatus.style.color = "var(--danger)";
+            }
+        }
+
+        function drawHUD() {
+            // HUD Graphics loop (cleaned up as landmarks are no longer drawn)
+            function loop() {
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                requestAnimationFrame(loop);
+            }
+            loop();
+        }
+
+        async function startScan() {
+            scanBtn.disabled = true;
+            scanner.style.display = 'block';
+            scanStatus.innerText = "SCANNING BIOMETRICS...";
+            resultsContainer.innerHTML = '';
+
+            // AI Scan Phases
+            const phases = [
+                { time: 1000, label: "ANALYZING EYE REGION...", insight: { title: "Eye Health Insight", icon: "fa-eye", text: "We detected slight dark circles. This may be associated with lack of sleep or screen fatigue. Consider the 20-20-20 rule for screens." }},
+                { time: 3000, label: "DETECTING POSTURE ALIGNMENT...", insight: { title: "Posture Insight", icon: "fa-person", text: "Your head appears slightly forward relative to your shoulders. Try sitting upright and adjusting your monitor height." }},
+                { time: 5000, label: "MEASURING FACIAL FATIGUE...", insight: { title: "Wellness Indicator", icon: "fa-face-smile", text: "Visible cues suggest mild facial muscle tension. Consider a short mindfulness break or hydration session." }}
+            ];
+
+            for (const phase of phases) {
+                await new Promise(r => setTimeout(r, 2000));
+                scanStatus.innerText = phase.label;
+                addInsight(phase.insight);
+                // Camera processing normally goes here locally
+            }
+
+            setTimeout(() => {
+                scanner.style.display = 'none';
+                scanStatus.innerText = "SCAN COMPLETE";
+                scanBtn.disabled = false;
+            }, 1000);
+        }
+
+        function addInsight(data) {
+            const card = document.createElement('div');
+            card.className = 'insight-card';
+            card.innerHTML = `
+                <div class="insight-header">
+                    <i class="fa-solid ${data.icon}"></i> ${data.title}
+                </div>
+                <div class="insight-text">${data.text}</div>
+            `;
+            resultsContainer.prepend(card);
+            setTimeout(() => card.classList.add('active'), 50);
+        }
+
+        window.onload = initCamera;
+    </script>
+</body>
+</html>

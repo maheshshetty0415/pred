@@ -1,0 +1,948 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predectiva — Predict Your Future Health</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Montserrat', sans-serif;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #312e81 100%);
+            color: #e2e8f0;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* ── Animated ambient background orbs ── */
+        .bg-orb {
+            position: fixed;
+            border-radius: 50%;
+            filter: blur(80px);
+            z-index: 0;
+            pointer-events: none;
+            animation: floatOrb 20s ease-in-out infinite;
+            will-change: transform; /* Compositor layer hint – prevents scroll glitch */
+        }
+        .orb-1 {
+            width: 600px; height: 600px;
+            background: radial-gradient(circle, rgba(56,189,248,0.15), transparent 70%);
+            top: -200px; right: -100px;
+            animation-duration: 25s;
+        }
+        .orb-2 {
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(216,180,254,0.2), transparent 70%);
+            bottom: -150px; left: -150px;
+            animation-duration: 30s;
+            animation-direction: reverse;
+        }
+        .orb-3 {
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(244,114,182,0.1), transparent 70%);
+            top: 50%; left: 40%;
+            animation-duration: 18s;
+        }
+
+        @keyframes floatOrb {
+            0%   { transform: translate(0, 0) scale(1); }
+            33%  { transform: translate(30px, -30px) scale(1.05); }
+            66%  { transform: translate(-20px, 20px) scale(0.95); }
+            100% { transform: translate(0, 0) scale(1); }
+        }
+
+        /* ── Grid dot background ── */
+        body::before {
+            content: '';
+            position: fixed;
+            inset: 0;
+            background-image:
+                radial-gradient(rgba(255,255,255,0.04) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: 0;
+            pointer-events: none;
+        }
+
+        /* ── Navbar ── */
+        nav {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 60px;
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(20px);
+            border-bottom: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .nav-logo {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: #38bdf8;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .nav-logo i { font-size: 1.6rem; }
+
+        .nav-tagline {
+            font-size: 0.7rem;
+            color: #64748b;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+        }
+
+        .nav-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .nav-user {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            background: rgba(56,189,248,0.08);
+            border: 1px solid rgba(56,189,248,0.2);
+            border-radius: 30px;
+            padding: 8px 18px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            color: #38bdf8;
+        }
+
+        .nav-user i { font-size: 1rem; }
+
+        .signout-btn {
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #94a3b8;
+            padding: 8px 18px;
+            border-radius: 8px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.8rem;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .signout-btn:hover {
+            border-color: rgba(244,63,94,0.4);
+            color: #fb7185;
+        }
+
+        /* ── Hero Section ── */
+        .hero {
+            position: relative;
+            z-index: 1;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            padding: 120px 40px 60px;
+        }
+
+        /* Floating medical icons in background */
+        .floating-icons {
+            position: fixed;
+            inset: 0;
+            z-index: 0;
+            pointer-events: none;
+            overflow: hidden;
+        }
+
+        .float-icon {
+            position: absolute;
+            color: rgba(56, 189, 248, 0.08);
+            animation: driftIcon linear infinite;
+        }
+
+        @keyframes driftIcon {
+            0%   { transform: translateY(100vh) rotate(0deg); opacity: 0; }
+            10%  { opacity: 1; }
+            90%  { opacity: 1; }
+            100% { transform: translateY(-200px) rotate(360deg); opacity: 0; }
+        }
+
+        /* AI Badge */
+        .ai-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(56,189,248,0.1);
+            border: 1px solid rgba(56,189,248,0.3);
+            border-radius: 30px;
+            padding: 8px 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #38bdf8;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 30px;
+            animation: fadeInDown 0.8s ease forwards;
+        }
+
+        .ai-badge::before {
+            content: '';
+            width: 8px; height: 8px;
+            background: #38bdf8;
+            border-radius: 50%;
+            box-shadow: 0 0 6px #38bdf8;
+            animation: pulse 2s ease-in-out infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; transform: scale(1); }
+            50%       { opacity: 0.5; transform: scale(0.8); }
+        }
+
+        /* Main Heading */
+        .hero-title {
+            font-size: clamp(2.5rem, 6vw, 5rem);
+            font-weight: 800;
+            line-height: 1.1;
+            margin-bottom: 30px;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease 0.2s forwards;
+            max-width: 900px;
+        }
+
+        .hero-title .gradient-text {
+            background: linear-gradient(135deg, #38bdf8, #818cf8, #f472b6);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        .hero-subtitle {
+            font-size: clamp(1rem, 2vw, 1.25rem);
+            color: #94a3b8;
+            font-weight: 400;
+            line-height: 1.7;
+            max-width: 650px;
+            margin-bottom: 50px;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease 0.4s forwards;
+        }
+
+        /* CTA Button */
+        .cta-group {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-wrap: wrap;
+            justify-content: center;
+            opacity: 0;
+            animation: fadeInUp 0.8s ease 0.6s forwards;
+        }
+
+        .btn-glow {
+            padding: 20px 50px;
+            font-size: 1.1rem;
+            font-weight: 700;
+            font-family: 'Montserrat', sans-serif;
+            color: white;
+            background: linear-gradient(135deg, #0ea5e9, #3b82f6, #6366f1);
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow:
+                0 0 40px rgba(56, 189, 248, 0.4),
+                0 20px 40px rgba(0,0,0,0.3);
+            transition: all 0.3s ease;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-glow::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(135deg, rgba(255,255,255,0.2), transparent);
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .btn-glow:hover {
+            transform: translateY(-4px) scale(1.02);
+            box-shadow:
+                0 0 60px rgba(56, 189, 248, 0.6),
+                0 25px 50px rgba(0,0,0,0.4);
+        }
+
+        .btn-glow:hover::before { opacity: 1; }
+
+        .btn-outline {
+            padding: 19px 40px;
+            font-size: 1rem;
+            font-weight: 600;
+            font-family: 'Montserrat', sans-serif;
+            color: #e2e8f0;
+            background: transparent;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .btn-outline:hover {
+            border-color: rgba(56,189,248,0.5);
+            color: #38bdf8;
+            box-shadow: 0 0 20px rgba(56,189,248,0.15);
+        }
+
+        /* Feature Cards */
+        .features {
+            position: relative;
+            z-index: 1;
+            display: flex;
+            gap: 24px;
+            flex-wrap: wrap;
+            justify-content: center;
+            padding: 0 40px 80px;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .feature-card {
+            flex: 1;
+            min-width: 260px;
+            max-width: 340px;
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 24px;
+            padding: 36px 30px;
+            /* Removed backdrop-filter to reduce GPU cost */
+            transition: all 0.4s ease;
+            position: relative;
+            overflow: hidden;
+            opacity: 0;
+            animation: fadeInUp 0.7s ease forwards;
+            will-change: transform;
+        }
+
+        .feature-card:nth-child(1) { animation-delay: 0.8s; }
+        .feature-card:nth-child(2) { animation-delay: 1.0s; }
+        .feature-card:nth-child(3) { animation-delay: 1.2s; }
+
+        .feature-card::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 1px;
+            background: linear-gradient(90deg, transparent, rgba(56,189,248,0.5), transparent);
+        }
+
+        .feature-card:hover {
+            transform: translateY(-8px);
+            border-color: rgba(56,189,248,0.2);
+            box-shadow: 0 30px 60px rgba(0,0,0,0.3), 0 0 30px rgba(56,189,248,0.1);
+        }
+
+        .feature-icon {
+            width: 56px; height: 56px;
+            border-radius: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+        .icon-blue { background: rgba(56,189,248,0.1); color: #38bdf8; }
+        .icon-purple { background: rgba(129,140,248,0.1); color: #818cf8; }
+        .icon-pink { background: rgba(244,114,182,0.1); color: #f472b6; }
+
+        .feature-card h3 {
+            font-size: 1.1rem;
+            font-weight: 700;
+            margin-bottom: 12px;
+            color: #e2e8f0;
+        }
+
+        .feature-card p {
+            font-size: 0.875rem;
+            color: #64748b;
+            line-height: 1.7;
+        }
+
+        /* Glow divider */
+        .glow-line {
+            width: 120px;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+            margin: 0 auto 60px;
+            border-radius: 2px;
+        }
+
+        /* Animations */
+        @keyframes fadeInDown {
+            from { opacity: 0; transform: translateY(-20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+
+        @media (max-width: 992px) {
+            nav {
+                padding: 15px 30px;
+            }
+            .hero {
+                padding: 110px 20px 40px;
+            }
+            .features {
+                padding: 0 20px 60px;
+                gap: 20px;
+            }
+            .feature-card {
+                max-width: 100%;
+                flex: 1 1 calc(50% - 20px);
+            }
+        }
+
+        @media (max-width: 768px) {
+            nav {
+                flex-direction: column;
+                gap: 15px;
+                text-align: center;
+                padding: 15px;
+                position: relative;
+            }
+            .nav-right {
+                width: 100%;
+                justify-content: center;
+                gap: 10px;
+            }
+            .hero-title {
+                font-size: 2.3rem;
+                margin-bottom: 20px;
+            }
+            .hero-subtitle {
+                font-size: 0.95rem;
+                margin-bottom: 35px;
+            }
+            .cta-group {
+                flex-direction: column;
+                width: 100%;
+                gap: 15px;
+            }
+            .btn-glow, .btn-outline {
+                width: 100%;
+                padding: 16px 20px;
+                font-size: 1rem;
+            }
+            .features {
+                flex-direction: column;
+                align-items: center;
+            }
+            .feature-card {
+                width: 100%;
+                max-width: 100%;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- Ambient orbs -->
+    <div class="bg-orb orb-1"></div>
+    <div class="bg-orb orb-2"></div>
+    <div class="bg-orb orb-3"></div>
+
+    <!-- Floating medical icons -->
+    <div class="floating-icons" id="floating-icons"></div>
+
+    <!-- Navbar -->
+    <nav>
+        <div>
+            <div class="nav-logo"><i class="fa-solid fa-heart-pulse"></i> Predectiva</div>
+            <div class="nav-tagline">Predict. Prevent. Protect.</div>
+        </div>
+        <div class="nav-right">
+            <div class="nav-user" id="nav-user">
+                <i class="fa-solid fa-user-circle"></i>
+                <span id="user-name-display">User</span>
+            </div>
+            <button class="signout-btn" onclick="signOut()"><i class="fa-solid fa-right-from-bracket"></i> Sign Out</button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <section class="hero">
+        <div class="ai-badge"><i class="fa-solid fa-microchip"></i> AI-Powered Health Intelligence</div>
+
+        <h1 class="hero-title">
+            Predict Your<br>
+            <span class="gradient-text">Future Health Risks</span>
+        </h1>
+
+        <p class="hero-subtitle">
+            Predectiva uses advanced artificial intelligence to analyze your lifestyle, biomarkers, and health patterns — detecting potential diseases before they appear, empowering you to take action today.
+        </p>
+
+        <div class="cta-group">
+            <button class="btn-glow" onclick="navigateToPredict()">
+                <i class="fa-solid fa-rocket"></i> &nbsp; Check My Risk
+            </button>
+            <button class="btn-outline" onclick="window.location.href='wellness-scan.html'">
+                <i class="fa-solid fa-camera"></i> &nbsp; AI Wellness Scan
+            </button>
+            <button class="btn-outline" onclick="window.location.href='how-it-works.html'">
+                <i class="fa-solid fa-circle-play"></i> &nbsp; See How It Works
+            </button>
+        </div>
+    </section>
+
+    <!-- Glow divider -->
+    <div class="glow-line"></div>
+
+    <!-- Feature Cards -->
+    <section class="features">
+        <div class="feature-card">
+            <div class="feature-icon icon-blue"><i class="fa-solid fa-brain"></i></div>
+            <h3>AI Risk Prediction</h3>
+            <p>Our machine learning models analyze hundreds of health parameters to predict your risk of diabetes, heart disease, and more with high accuracy.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon icon-purple"><i class="fa-solid fa-chart-line"></i></div>
+            <h3>Real-Time Insights</h3>
+            <p>Get instant, personalized insights about your health trajectory — visualized clearly so you can understand what your body is telling you.</p>
+        </div>
+        <div class="feature-card" onclick="window.location.href='wellness-scan.html'" style="cursor: pointer;">
+            <div class="feature-icon icon-pink"><i class="fa-solid fa-camera"></i></div>
+            <h3>AI Wellness Scan</h3>
+            <p>Use your camera for a real-time biometric analysis. Detect eye strain, posture alignment, and fatigue indicators instantly.</p>
+        </div>
+        <div class="feature-card">
+            <div class="feature-icon icon-blue"><i class="fa-solid fa-shield-heart"></i></div>
+            <h3>Preventive Guidance</h3>
+            <p>Receive AI-curated preventive recommendations — diet tips, exercise guidance, and lifestyle changes tailored specifically.</p>
+        </div>
+    </section>
+
+    <!-- ── Education / Video Section ── -->
+    <section class="edu-section reveal-section" id="prediction-section">
+        <div class="edu-inner">
+            <!-- Pill badge -->
+            <div class="section-badge reveal-item">
+                <i class="fa-solid fa-video"></i> Watch &amp; Learn
+            </div>
+
+            <h2 class="edu-heading reveal-item">
+                Why Early Disease Prediction <span class="gradient-text">Matters</span>
+            </h2>
+
+            <p class="edu-desc reveal-item">
+                Most chronic diseases develop silently over years. Detecting them early — 
+                before symptoms appear — is the single most powerful way to save lives and 
+                reduce healthcare costs. Watch how AI is transforming preventive medicine.
+            </p>
+
+            <!-- Glassmorphism Video Card -->
+            <div class="video-glass-card reveal-item">
+                <div class="video-wrapper">
+                    <iframe
+                        src="https://www.youtube.com/embed/_MxyB93-ybo?rel=0&modestbranding=1"
+                        title="Why Early Disease Prediction Matters"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+            </div>
+
+            <div class="stats-row reveal-item">
+                <div class="stat-pill">
+                    <span class="stat-n">80%</span>
+                    <span class="stat-l">of chronic diseases<br>are preventable</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="stat-n">3×</span>
+                    <span class="stat-l">better outcomes<br>with early detection</span>
+                </div>
+                <div class="stat-pill">
+                    <span class="stat-n">AI</span>
+                    <span class="stat-l">analyzes 200+<br>health parameters</span>
+                </div>
+            </div>
+
+            <!-- Bottom CTA -->
+            <div class="edu-cta reveal-item">
+                <p class="edu-cta-desc">
+                    Ready to take control of your health? Let MEDAI's AI scan your risk profile and give you a personalised health forecast in minutes.
+                </p>
+                <button class="btn-glow" id="start-prediction-btn" onclick="navigateToPredict()">
+                    <i class="fa-solid fa-stethoscope"></i> &nbsp; Start Health Prediction
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="site-footer">
+        <div class="footer-logo"><i class="fa-solid fa-heart-pulse"></i> MEDAI</div>
+        <p class="footer-tagline">Predict. Prevent. Protect.</p>
+        <p class="footer-copy">© 2025 Team Swastik. Built for the Hackathon.</p>
+    </footer>
+
+    <style>
+        /* ── Education Section ── */
+        .edu-section {
+            position: relative;
+            z-index: 1;
+            padding: 100px 40px;
+            max-width: 900px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .section-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: rgba(129,140,248,0.1);
+            border: 1px solid rgba(129,140,248,0.3);
+            border-radius: 30px;
+            padding: 8px 20px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #818cf8;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            margin-bottom: 24px;
+        }
+
+        .edu-heading {
+            font-size: clamp(1.8rem, 4vw, 3rem);
+            font-weight: 800;
+            line-height: 1.2;
+            margin-bottom: 24px;
+            color: #e2e8f0;
+        }
+
+        .edu-desc {
+            font-size: 1.05rem;
+            color: #94a3b8;
+            line-height: 1.8;
+            max-width: 680px;
+            margin: 0 auto 50px;
+        }
+
+        /* Video glassmorphism card */
+        .video-glass-card {
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.1);
+            border-radius: 28px;
+            padding: 16px;
+            backdrop-filter: blur(20px);
+            box-shadow:
+                0 40px 80px rgba(0,0,0,0.4),
+                0 0 60px rgba(99,102,241,0.1);
+            margin-bottom: 50px;
+            transition: box-shadow 0.4s ease;
+        }
+
+        .video-glass-card:hover {
+            box-shadow:
+                0 40px 80px rgba(0,0,0,0.5),
+                0 0 80px rgba(56,189,248,0.15);
+        }
+
+        /* Responsive 16:9 video */
+        .video-wrapper {
+            position: relative;
+            border-radius: 18px;
+            overflow: hidden;
+            padding-top: 56.25%; /* 16:9 */
+        }
+
+        .video-wrapper iframe {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            border: none;
+        }
+
+        /* Stats row */
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+            margin-bottom: 60px;
+        }
+
+        .stat-pill {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            background: rgba(255,255,255,0.04);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 16px;
+            padding: 20px 28px;
+            backdrop-filter: blur(12px);
+            text-align: left;
+            flex: 1;
+            min-width: 200px;
+            max-width: 260px;
+            transition: all 0.3s ease;
+        }
+
+        .stat-pill:hover {
+            border-color: rgba(56,189,248,0.2);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2), 0 0 20px rgba(56,189,248,0.08);
+            transform: translateY(-4px);
+        }
+
+        .stat-n {
+            font-size: 2rem;
+            font-weight: 800;
+            background: linear-gradient(135deg, #38bdf8, #818cf8);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            line-height: 1;
+            flex-shrink: 0;
+        }
+
+        .stat-l {
+            font-size: 0.8rem;
+            color: #64748b;
+            line-height: 1.5;
+            font-weight: 500;
+        }
+
+        /* CTA area */
+        .edu-cta {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 24px;
+        }
+
+        .edu-cta-desc {
+            font-size: 0.95rem;
+            color: #94a3b8;
+            line-height: 1.7;
+            max-width: 560px;
+        }
+
+        /* Footer */
+        .site-footer {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+            padding: 50px 40px 40px;
+            border-top: 1px solid rgba(255,255,255,0.06);
+        }
+
+        .footer-logo {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: #38bdf8;
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .footer-tagline {
+            font-size: 0.75rem;
+            letter-spacing: 2px;
+            text-transform: uppercase;
+            color: #475569;
+            margin-bottom: 10px;
+        }
+
+        .footer-copy {
+            font-size: 0.75rem;
+            color: #334155;
+        }
+
+        /* ── Scroll Reveal ── */
+        .reveal-item {
+            opacity: 0;
+            transform: translateY(40px);
+            transition: opacity 0.7s ease, transform 0.7s ease;
+        }
+
+        .reveal-item.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        /* Stagger delays for children */
+        .reveal-item:nth-child(1) { transition-delay: 0s; }
+        .reveal-item:nth-child(2) { transition-delay: 0.1s; }
+        .reveal-item:nth-child(3) { transition-delay: 0.2s; }
+        .reveal-item:nth-child(4) { transition-delay: 0.3s; }
+        .reveal-item:nth-child(5) { transition-delay: 0.45s; }
+        .reveal-item:nth-child(6) { transition-delay: 0.6s; }
+
+        @media (max-width: 992px) {
+            .edu-section {
+                padding: 60px 20px;
+            }
+            .video-glass-card {
+                padding: 12px;
+                border-radius: 20px;
+            }
+            .stats-row {
+                gap: 15px;
+            }
+            .stat-pill {
+                padding: 15px 20px;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .edu-heading {
+                font-size: 1.8rem;
+            }
+            .edu-desc {
+                font-size: 0.95rem;
+                margin-bottom: 30px;
+            }
+            .stats-row {
+                flex-direction: column;
+                align-items: center;
+            }
+            .stat-pill {
+                width: 100%;
+                max-width: 100%;
+            }
+            .site-footer {
+                padding: 40px 20px;
+            }
+        }
+    </style>
+
+    <script>
+        // Show logged-in user's name
+        const currentUser = JSON.parse(sessionStorage.getItem('currentUser') || '{}');
+        if (currentUser && currentUser.fullname) {
+            document.getElementById('user-name-display').textContent = currentUser.fullname;
+        }
+
+        function getStarted() {
+            document.getElementById('start-prediction-btn').scrollIntoView({ behavior: 'smooth', block: 'center' });
+        }
+
+        function navigateToPredict() {
+            window.location.href = 'predict.html';
+        }
+
+        function signOut() {
+            const API_BASE = window.location.port === '5000' ? '' : 'http://localhost:5000';
+            fetch(`${API_BASE}/api/auth/logout`, {
+                headers: {
+                    'Authorization': 'Bearer ' + sessionStorage.getItem('token')
+                },
+                credentials: 'include'
+            })
+            .finally(() => {
+                sessionStorage.removeItem('currentUser');
+                sessionStorage.removeItem('token');
+                window.location.href = 'index.html';
+            });
+        }
+
+        // Spawn drifting medical icons (capped at 12 to prevent DOM bloat)
+        const icons = ['fa-heart-pulse', 'fa-dna', 'fa-stethoscope', 'fa-syringe', 'fa-pills', 'fa-microchip', 'fa-user-doctor', 'fa-hospital'];
+        const iconContainer = document.getElementById('floating-icons');
+        let activeIconCount = 0;
+        const MAX_ICONS = 12;
+
+        function spawnIcon() {
+            if (activeIconCount >= MAX_ICONS) return;
+            activeIconCount++;
+            const el = document.createElement('i');
+            el.className = `fas ${icons[Math.floor(Math.random() * icons.length)]} float-icon`;
+            const size = Math.random() * 30 + 20;
+            el.style.fontSize = size + 'px';
+            el.style.left = Math.random() * 100 + 'vw';
+            const duration = Math.random() * 15 + 10;
+            el.style.animationDuration = duration + 's';
+            el.style.animationDelay = '0s';
+            iconContainer.appendChild(el);
+            setTimeout(() => { el.remove(); activeIconCount--; }, duration * 1000);
+        }
+
+        for (let i = 0; i < 6; i++) setTimeout(spawnIcon, i * 2000);
+        setInterval(spawnIcon, 3500);
+
+        // Global background spotlight (same as login page)
+        document.addEventListener('mousemove', (e) => {
+            document.body.style.setProperty('--mx', e.clientX + 'px');
+            document.body.style.setProperty('--my', e.clientY + 'px');
+        });
+
+          // ── Scroll-Reactive Text Color (Smooth Sync) ──
+        let lastKnownScrollPosition = 0;
+        let ticking = false;
+
+        function updateColors(scrollPos) {
+            const maxScroll = document.body.scrollHeight - window.innerHeight;
+            if (maxScroll <= 0) return;
+            const progress = scrollPos / maxScroll;
+            const hue = Math.round(progress * 360);
+
+            // Create a dynamic gradient that shifts through the spectrum
+            const gradientColor = `linear-gradient(135deg,
+                hsl(${(hue + 190) % 360}, 90%, 65%),
+                hsl(${(hue + 240) % 360}, 80%, 70%),
+                hsl(${(hue + 310) % 360}, 90%, 75%))`;
+
+            document.querySelectorAll('.gradient-text').forEach(el => {
+                el.style.backgroundImage = gradientColor;
+                el.style.webkitBackgroundClip = 'text';
+                el.style.backgroundClip = 'text';
+                el.style.webkitTextFillColor = 'transparent';
+                // Add a matching glow
+                el.style.textShadow = `0 0 20px hsla(${(hue + 240) % 360}, 80%, 70%, 0.3)`;
+            });
+        }
+
+        window.addEventListener('scroll', () => {
+            lastKnownScrollPosition = window.scrollY;
+            if (!ticking) {
+                window.requestAnimationFrame(() => {
+                    updateColors(lastKnownScrollPosition);
+                    ticking = false;
+                });
+                ticking = true;
+            }
+        });
+
+        // Initialize colors on load
+        updateColors(window.scrollY);
+
+        // ── Scroll Reveal: Intersection Observer ──
+        const revealObserver = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.classList.add('visible');
+                    revealObserver.unobserve(entry.target); // fire once
+                }
+            });
+        }, { threshold: 0.15 });
+
+        document.querySelectorAll('.reveal-item').forEach(el => {
+            revealObserver.observe(el);
+        });
+
+    </script>
+</body>
+</html>

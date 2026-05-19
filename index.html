@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Predectiva - Login</title>
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        /* Admin Panel Button */
+        .admin-panel-btn {
+            position: fixed;
+            top: 25px;
+            right: 30px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.06);
+            backdrop-filter: blur(15px);
+            -webkit-backdrop-filter: blur(15px);
+            border: 1px solid rgba(255, 255, 255, 0.12);
+            color: #94a3b8;
+            padding: 10px 22px;
+            border-radius: 50px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 600;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            letter-spacing: 0.5px;
+        }
+        .admin-panel-btn:hover {
+            color: #38bdf8;
+            border-color: rgba(56, 189, 248, 0.4);
+            background: rgba(56, 189, 248, 0.08);
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.15);
+            transform: translateY(-2px);
+        }
+        .admin-panel-btn i {
+            font-size: 0.9rem;
+        }
+
+        /* Admin Modal Overlay */
+        .admin-modal-overlay {
+            position: fixed;
+            inset: 0;
+            z-index: 9999;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            animation: modalFadeIn 0.4s ease;
+        }
+        .admin-modal-overlay.active {
+            display: flex;
+        }
+        @keyframes modalFadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        /* Admin Modal Card */
+        .admin-modal {
+            width: 420px;
+            background: rgba(15, 23, 42, 0.95);
+            backdrop-filter: blur(30px);
+            border: 1px solid rgba(56, 189, 248, 0.2);
+            border-radius: 28px;
+            padding: 45px 40px;
+            position: relative;
+            overflow: hidden;
+            animation: modalSlideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 40px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(56, 189, 248, 0.1);
+        }
+        @keyframes modalSlideUp {
+            from { opacity: 0; transform: translateY(40px) scale(0.95); }
+            to { opacity: 1; transform: translateY(0) scale(1); }
+        }
+
+        .admin-modal-glow {
+            position: absolute;
+            top: -50px; right: -50px;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(56, 189, 248, 0.15), transparent 70%);
+            pointer-events: none;
+        }
+
+        .admin-modal-close {
+            position: absolute;
+            top: 18px; right: 22px;
+            background: none;
+            border: none;
+            color: #64748b;
+            font-size: 1.8rem;
+            cursor: pointer;
+            transition: color 0.3s;
+            line-height: 1;
+        }
+        .admin-modal-close:hover { color: #f87171; }
+
+        .admin-modal-icon {
+            width: 70px; height: 70px;
+            background: linear-gradient(135deg, rgba(56, 189, 248, 0.15), rgba(129, 140, 248, 0.15));
+            border: 1px solid rgba(56, 189, 248, 0.3);
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 1.8rem;
+            color: #38bdf8;
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.15);
+        }
+
+        .admin-modal-title {
+            text-align: center;
+            font-size: 1.5rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 6px;
+        }
+        .admin-modal-subtitle {
+            text-align: center;
+            font-size: 0.85rem;
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+
+        .admin-input-group {
+            margin-bottom: 20px;
+        }
+        .admin-input-group label {
+            display: block;
+            font-size: 0.75rem;
+            font-weight: 600;
+            color: #94a3b8;
+            margin-bottom: 8px;
+            letter-spacing: 0.5px;
+        }
+        .admin-input-group label i {
+            color: #38bdf8;
+            margin-right: 4px;
+        }
+        .admin-input {
+            width: 100%;
+            padding: 14px 18px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 14px;
+            background: rgba(0, 0, 0, 0.3);
+            color: #f1f5f9;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 0.95rem;
+            outline: none;
+            transition: all 0.3s;
+        }
+        .admin-input:focus {
+            border-color: #38bdf8;
+            box-shadow: 0 0 0 4px rgba(56, 189, 248, 0.12);
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .admin-input::placeholder {
+            color: #475569;
+        }
+
+        .admin-error {
+            color: #f87171;
+            font-size: 0.8rem;
+            font-weight: 600;
+            text-align: center;
+            min-height: 20px;
+            margin-bottom: 10px;
+            transition: all 0.3s;
+        }
+
+        .admin-submit-btn {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #0ea5e9, #6366f1);
+            color: #fff;
+            border: none;
+            border-radius: 14px;
+            font-family: 'Montserrat', sans-serif;
+            font-size: 1rem;
+            font-weight: 700;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 10px 25px rgba(56, 189, 248, 0.3);
+        }
+        .admin-submit-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 15px 35px rgba(56, 189, 248, 0.5);
+        }
+
+        @keyframes shakeError {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-8px); }
+            40% { transform: translateX(8px); }
+            60% { transform: translateX(-5px); }
+            80% { transform: translateX(5px); }
+        }
+        .admin-modal.shake {
+            animation: shakeError 0.5s ease;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Admin Login Button (Top Right) -->
+    <button class="admin-panel-btn" id="admin-panel-btn" onclick="openAdminModal()">
+        <i class="fa-solid fa-shield-halved"></i> Admin
+    </button>
+
+    <!-- Admin Login Modal Overlay -->
+    <div class="admin-modal-overlay" id="admin-modal-overlay" onclick="closeAdminModal(event)">
+        <div class="admin-modal">
+            <div class="admin-modal-glow"></div>
+            <button class="admin-modal-close" onclick="closeAdminModalForce()">&times;</button>
+            <div class="admin-modal-icon">
+                <i class="fa-solid fa-user-shield"></i>
+            </div>
+            <h2 class="admin-modal-title">Admin Access</h2>
+            <p class="admin-modal-subtitle">Enter your administrator credentials</p>
+            <form id="admin-login-form" onsubmit="handleAdminLogin(event)">
+                <div class="admin-input-group">
+                    <label><i class="fa-solid fa-envelope"></i> Admin Email</label>
+                    <input type="email" id="admin-id" class="admin-input" placeholder="admin@predectiva.com" required autocomplete="off">
+                </div>
+                <div class="admin-input-group">
+                    <label><i class="fa-solid fa-lock"></i> Password</label>
+                    <input type="password" id="admin-pass" class="admin-input" placeholder="Enter password" required>
+                </div>
+                <div class="admin-error" id="admin-error"></div>
+                <button type="submit" class="admin-submit-btn">
+                    <i class="fa-solid fa-right-to-bracket"></i> Access Dashboard
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="page-wrapper">
+        <!-- Background Elements -->
+        <div class="bg-shape-pink"></div>
+        <div class="bg-shape-blue"></div>
+        <div class="bg-dots top-left-dots"></div>
+        <div class="bg-dots bottom-right-dots"></div>
+
+
+
+        <div class="auth-card">
+            <!-- Left Panel -->
+            <div class="auth-left">
+                <div class="logo">
+                    <i class="fa-solid fa-heart-pulse"></i> Predectiva
+                </div>
+                <!-- Modern AI Tagline -->
+                <div class="tagline">Predict. Prevent. Protect.</div>
+
+                <div class="hero-image-container">
+                    <div class="hero-circle">
+                        <!-- User's actual doctor image -->
+                        <div class="doctor-placeholder"></div>
+                    </div>
+                </div>
+
+                <p class="copyright">Made by Mahesh A</p>
+            </div>
+
+            <!-- Right Panel -->
+            <div class="auth-right">
+
+                <!-- The raised central form card -->
+                <div class="form-container">
+                    <div class="tabs">
+                        <button id="signup-tab" class="tab-btn active">Sign Up</button>
+                        <button id="signin-tab" class="tab-btn">Sign In</button>
+                    </div>
+
+                    <form id="auth-form" class="form-content">
+                        <div class="input-group" id="name-field">
+                            <label>Full Name</label>
+                            <input type="text" id="fullname" class="input-field">
+                        </div>
+
+                        <div class="input-group">
+                            <label>Email</label>
+                            <input type="email" id="email" class="input-field" required>
+                        </div>
+
+                        <div class="input-group">
+                            <label>Password</label>
+                            <input type="password" id="password" class="input-field" required>
+                        </div>
+
+                        <button type="submit" id="submit-btn" class="btn-primary">Sign Up</button>
+
+                        <p class="toggle-text">
+                            <span id="toggle-link">I have an Account ?</span>
+                        </p>
+                    </form>
+
+                </div>
+
+                <!-- Footer with contact info -->
+                <div class="auth-footer">
+                    <div class="contact-info">
+                        <span><i class="fa-solid fa-phone"></i> 6362409209</span>
+                        <span><i class="fa-regular fa-envelope"></i> mahesha0415@gmail.com</span>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+        <!-- Animated Health Facts Sidebar (Right Side) -->
+        <div class="health-facts-sidebar">
+            <div class="facts-marquee">
+                <!-- Group 1 -->
+                <div class="fact-card">
+                    <i class="fa-solid fa-apple-whole"></i>
+                    <p>"An apple a day keeps the doctor away, but only if your aim is good."</p>
+                </div>
+                <div class="fact-card">
+                    <i class="fa-solid fa-droplet"></i>
+                    <p><strong>Fact:</strong> Drinking 8 glasses of water daily boosts brain power and skin health.</p>
+                </div>
+                <div class="fact-card">
+                    <i class="fa-solid fa-leaf"></i>
+                    <p>"Take care of your body. It’s the only place you have to live." – Jim Rohn</p>
+                </div>
+                <div class="fact-card">
+                    <i class="fa-solid fa-bed"></i>
+                    <p><strong>Fact:</strong> 7-9 hours of sleep helps repair your heart and blood vessels.</p>
+                </div>
+                <div class="fact-card">
+                    <i class="fa-solid fa-person-running"></i>
+                    <p>"A healthy outside starts from the inside." – Robert Urich</p>
+                </div>
+                <!-- Group 2 (Duplicate for seamless loop) -->
+                <div class="fact-card">
+                    <i class="fa-solid fa-apple-whole"></i>
+                    <p>"An apple a day keeps the doctor away, but only if your aim is good."</p>
+                </div>
+                <div class="fact-card">
+                    <i class="fa-solid fa-droplet"></i>
+                    <p><strong>Fact:</strong> Drinking 8 glasses of water daily boosts brain power and skin health.</p>
+                </div>
+                <div class="fact-card">
+                    <i class="fa-solid fa-leaf"></i>
+                    <p>"Take care of your body. It’s the only place you have to live." – Jim Rohn</p>
+                </div>
+                <div class="fact-card">
+                    <i class="fa-solid fa-bed"></i>
+                    <p><strong>Fact:</strong> 7-9 hours of sleep helps repair your heart and blood vessels.</p>
+                </div>
+                <div class="fact-card">
+                    <i class="fa-solid fa-person-running"></i>
+                    <p>"A healthy outside starts from the inside." – Robert Urich</p>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="script.js"></script>
+    <script>
+        // Admin Modal Logic
+        function openAdminModal() {
+            document.getElementById('admin-modal-overlay').classList.add('active');
+            document.getElementById('admin-id').focus();
+        }
+        function closeAdminModal(e) {
+            if (e.target === e.currentTarget) {
+                document.getElementById('admin-modal-overlay').classList.remove('active');
+                document.getElementById('admin-error').textContent = '';
+            }
+        }
+        function closeAdminModalForce() {
+            document.getElementById('admin-modal-overlay').classList.remove('active');
+            document.getElementById('admin-error').textContent = '';
+        }
+        async function handleAdminLogin(e) {
+            e.preventDefault();
+            const email = document.getElementById('admin-id').value.trim();
+            const password = document.getElementById('admin-pass').value.trim();
+            const errDiv = document.getElementById('admin-error');
+            errDiv.textContent = '';
+
+            try {
+                const API_BASE = window.location.port === '5000' ? '' : 'http://localhost:5000';
+                const res = await fetch(`${API_BASE}/api/auth/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+                const data = await res.json();
+                
+                if (data.success) {
+                    if (data.role === 'admin' || data.role === 'super_admin') {
+                        sessionStorage.setItem('adminLoggedIn', 'true');
+                        sessionStorage.setItem('token', data.token);
+                        window.location.href = 'admin-dashboard.html';
+                    } else {
+                        errDiv.textContent = 'Access Denied: You do not have administrator permissions.';
+                        const modal = document.querySelector('.admin-modal');
+                        modal.classList.add('shake');
+                        setTimeout(() => modal.classList.remove('shake'), 500);
+                    }
+                } else {
+                    errDiv.textContent = data.message || 'Invalid credentials. Access denied.';
+                    const modal = document.querySelector('.admin-modal');
+                    modal.classList.add('shake');
+                    setTimeout(() => modal.classList.remove('shake'), 500);
+                }
+            } catch (err) {
+                errDiv.textContent = 'Server connection error. Please try again.';
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -1,0 +1,12 @@
+[
+    {
+        "fullname": "System Admin",
+        "email": "admin@predectiva.com",
+        "password": "$2b$12$EUoJYCKEhjSzQce3.NibQu38YZEfaF7f.Y8pDaypW2AMTRyMAlA7S",
+        "role": "admin",
+        "isVerified": true,
+        "_id": "local_9mcuy0bfp2q",
+        "createdAt": "2026-05-19T13:37:37.822Z",
+        "updatedAt": "2026-05-19T13:37:37.824Z"
+    }
+]
