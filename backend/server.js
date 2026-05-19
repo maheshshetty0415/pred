@@ -24,7 +24,8 @@ const app = express();
 
 // Security Middlewares
 app.use(helmet({
-  contentSecurityPolicy: false
+  contentSecurityPolicy: false,
+  referrerPolicy: { policy: 'strict-origin-when-cross-origin' }
 }));
 
 const allowedOrigins = [
