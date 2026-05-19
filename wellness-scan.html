@@ -454,6 +454,12 @@
         }
 
         window.onload = initCamera;
+
+        // Prevent right-click to protect source code
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            alert("Right click is disabled by the developer.");
+        });
     </script>
 </body>
 </html>
