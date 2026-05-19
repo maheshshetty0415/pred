@@ -39,7 +39,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const password = document.getElementById('password').value.trim();
         const fullname = document.getElementById('fullname') ? document.getElementById('fullname').value.trim() : '';
 
-        const API_BASE = window.location.port === '5000' ? '' : 'http://localhost:5000';
+        const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? (window.location.port === '5000' ? '' : 'http://localhost:5000') : '';
 
         if (isSignUp) {
             // --- SIGN UP LOGIC ---
