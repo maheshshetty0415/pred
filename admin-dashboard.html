@@ -499,6 +499,12 @@
         // Initial and auto-refresh every 5 seconds for live logs
         loadDashboard();
         setInterval(loadDashboard, 5000);
+
+        // Prevent right-click to protect source code
+        document.addEventListener('contextmenu', (e) => {
+            e.preventDefault();
+            alert("Right click is disabled by the developer.");
+        });
     </script>
 </body>
 </html>
