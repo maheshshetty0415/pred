@@ -330,7 +330,7 @@
 
         async function loadDashboard() {
             try {
-                const API_BASE = window.location.port === '5000' ? '' : 'http://localhost:5000';
+                const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? (window.location.port === '5000' ? '' : 'http://localhost:5000') : '';
                 const headers = {
                     'Authorization': 'Bearer ' + sessionStorage.getItem('token')
                 };
@@ -465,7 +465,7 @@
         async function deleteUser(userId) {
             if (confirm('Are you absolutely sure you want to permanently delete this user account and all of their medical records? This action cannot be undone.')) {
                 try {
-                    const API_BASE = window.location.port === '5000' ? '' : 'http://localhost:5000';
+                    const API_BASE = (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1') ? (window.location.port === '5000' ? '' : 'http://localhost:5000') : '';
                     const res = await fetch(`${API_BASE}/api/admin/users/${userId}`, {
                         method: 'DELETE',
                         headers: {
