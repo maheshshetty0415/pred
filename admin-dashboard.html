@@ -450,13 +450,15 @@
 
                 line.className = `terminal-line ${cssClass}`;
                 
-                const time = new Date(log.createdAt).toLocaleTimeString();
+                const dateObj = new Date(log.createdAt);
+                const time = dateObj.toLocaleDateString() + ' ' + dateObj.toLocaleTimeString();
                 const userText = log.user ? `User: ${log.user.email}` : 'IP session';
+                const device = log.userAgent || 'Unknown Device';
 
                 line.innerHTML = `
                     <span class="terminal-time">[${time}]</span>
                     <span class="terminal-action">${alertSymbol} ${log.action}</span>
-                    <span>${log.details} - IP: ${log.ipAddress} (${userText})</span>
+                    <span>${log.details} - IP: ${log.ipAddress} - Device: ${device} (${userText})</span>
                 `;
                 terminal.appendChild(line);
             });
