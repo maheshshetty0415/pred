@@ -33,7 +33,7 @@ exports.register = async (req, res, next) => {
         // Validation handled by mongoose
         const user = await User.create({ fullname, email, password });
         
-        await SecurityLog.create({ user: user._id, action: 'LOGIN_SUCCESS', ipAddress: req.ip || '0.0.0.0', details: 'User Registered' });
+        await SecurityLog.create({ user: user._id, action: 'LOGIN_SUCCESS', ipAddress: req.ip || '0.0.0.0', userAgent: req.headers['user-agent'], details: 'User Registered' });
         sendTokenResponse(user, 201, res);
     } catch (err) {
         next(err);
@@ -58,7 +58,7 @@ exports.login = async (req, res, next) => {
         }
 
         if (user.isLocked()) {
-            await SecurityLog.create({ user: user._id, action: 'ACCOUNT_LOCKED', ipAddress: req.ip || '0.0.0.0', details: 'Attempted login to locked account' });
+            await SecurityLog.create({ user: user._id, action: 'ACCOUNT_LOCKED', ipAddress: req.ip || '0.0.0.0', userAgent: req.headers['user-agent'], details: 'Attempted login to locked account' });
             return res.status(403).json({ success: false, message: 'Account is locked due to too many failed attempts' });
         }
 
@@ -68,9 +68,9 @@ exports.login = async (req, res, next) => {
             user.loginAttempts += 1;
             if (user.loginAttempts >= 5) {
                 user.lockUntil = Date.now() + 15 * 60 * 1000; // Lock for 15 mins
-                await SecurityLog.create({ user: user._id, action: 'ACCOUNT_LOCKED', ipAddress: req.ip || '0.0.0.0', details: 'Account locked due to 5 failed attempts' });
+                await SecurityLog.create({ user: user._id, action: 'ACCOUNT_LOCKED', ipAddress: req.ip || '0.0.0.0', userAgent: req.headers['user-agent'], details: 'Account locked due to 5 failed attempts' });
             } else {
-                await SecurityLog.create({ user: user._id, action: 'LOGIN_FAILED', ipAddress: req.ip || '0.0.0.0', details: `Failed attempt ${user.loginAttempts}` });
+                await SecurityLog.create({ user: user._id, action: 'LOGIN_FAILED', ipAddress: req.ip || '0.0.0.0', userAgent: req.headers['user-agent'], details: `Failed attempt ${user.loginAttempts}` });
             }
             await user.save({ validateBeforeSave: false });
             return res.status(401).json({ success: false, message: 'Invalid credentials' });
@@ -80,7 +80,7 @@ exports.login = async (req, res, next) => {
         user.lockUntil = undefined;
         await user.save({ validateBeforeSave: false });
 
-        await SecurityLog.create({ user: user._id, action: 'LOGIN_SUCCESS', ipAddress: req.ip || '0.0.0.0', details: 'Successful login' });
+        await SecurityLog.create({ user: user._id, action: 'LOGIN_SUCCESS', ipAddress: req.ip || '0.0.0.0', userAgent: req.headers['user-agent'], details: 'Successful login' });
         sendTokenResponse(user, 200, res);
     } catch (err) {
         next(err);
