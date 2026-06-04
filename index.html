@@ -230,10 +230,6 @@
                 <p class="admin-modal-subtitle">Enter your administrator credentials</p>
                 <form id="admin-login-form" onsubmit="handleAdminLogin(event)">
                     <div class="admin-input-group">
-                        <label><i class="fa-solid fa-envelope"></i> Admin Email</label>
-                        <input type="email" id="admin-id" class="admin-input" placeholder="admin@predectiva.com" required autocomplete="off">
-                    </div>
-                    <div class="admin-input-group">
                         <label><i class="fa-solid fa-lock"></i> Password</label>
                         <input type="password" id="admin-pass" class="admin-input" placeholder="Enter password" required>
                     </div>
@@ -372,7 +368,7 @@
             // Admin Modal Logic
             function openAdminModal() {
                 document.getElementById('admin-modal-overlay').classList.add('active');
-                document.getElementById('admin-id').focus();
+                document.getElementById('admin-pass').focus();
             }
             function closeAdminModal(e) {
                 if (e.target === e.currentTarget) {
@@ -386,7 +382,7 @@
             }
             async function handleAdminLogin(e) {
                 e.preventDefault();
-                const email = document.getElementById('admin-id').value.trim();
+                const email = 'admin@predectiva.com'; // Hardcoded admin email
                 const password = document.getElementById('admin-pass').value.trim();
                 const errDiv = document.getElementById('admin-error');
                 errDiv.textContent = '';
